@@ -1,10 +1,19 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-
-// ── Google Fonts ───────────────────────────────────────────────────────────
-const fontLink = document.createElement("link");
-fontLink.rel = "stylesheet";
-fontLink.href = "https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&family=Kalam:wght@300;400;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap";
-document.head.appendChild(fontLink);
+import { useState, useEffect, useRef } from "react";
+import "@fontsource/cinzel/400.css";
+import "@fontsource/cinzel/600.css";
+import "@fontsource/cinzel-decorative/400.css";
+import "@fontsource/cinzel-decorative/700.css";
+import "@fontsource/kalam/300.css";
+import "@fontsource/kalam/400.css";
+import "@fontsource/kalam/700.css";
+import "@fontsource/eb-garamond/400.css";
+import "@fontsource/eb-garamond/400-italic.css";
+import "@fontsource/eb-garamond/600.css";
+import "@fontsource/eb-garamond/600-italic.css";
+import "@fontsource/crimson-text/400.css";
+import "@fontsource/crimson-text/400-italic.css";
+import "@fontsource/crimson-text/600.css";
+import "@fontsource/crimson-text/600-italic.css";
 
 // ── Global styles ──────────────────────────────────────────────────────────
 const styleEl = document.createElement("style");
@@ -38,7 +47,7 @@ document.head.appendChild(styleEl);
 const RUNES = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ".split("");
 const YT_CHANNEL = "https://www.youtube.com/@AntlamTE";
 const TABS = ["skyrim","ideas","journal","youtube","gallery","settings"];
-const TAB_LABELS = { skyrim:"⚔ Skyrim", ideas:"📜 Ideas", journal:"✒ Journal", youtube:"▶ YouTube", gallery:"🖼 Gallery", settings:"⚙ Settings" };
+const TAB_LABELS = { skyrim:"⚔ Skyrim", ideas:"📜 Ideas", journal:"✒ Journal", youtube:"▶ YouTube", gallery:"🖼 Gallery", settings:"⚙ The Forge" };
 const SKYRIM_SUBTABS = [
   { id:"ideas",   icon:"📜", label:"Ideas Board" },
   { id:"journal", icon:"✒", label:"Journal"      },
@@ -94,10 +103,40 @@ function loadState(key, fallback) {
   }
 }
 
+// Load themeSettings by merging lightweight meta + heavy images from separate keys
+function loadThemeSettings() {
+  const meta   = loadState("hg_theme_meta",   defaultSettings());
+  const images = loadState("hg_theme_images", {});
+  // Re-merge bgImages back into each tab's theme
+  const merged = { ...meta };
+  for (const tabKey of Object.keys(merged)) {
+    merged[tabKey] = { ...merged[tabKey], bgImages: images[tabKey] || [] };
+  }
+  return merged;
+}
+
+// Save themeSettings split across two keys: meta (small) + images (large)
+function saveThemeSettings(themeSettings) {
+  const meta   = {};
+  const images = {};
+  for (const [tabKey, tabTheme] of Object.entries(themeSettings)) {
+    const { bgImages, ...rest } = tabTheme;
+    meta[tabKey]   = rest;
+    images[tabKey] = bgImages || [];
+  }
+  saveState("hg_theme_meta",   meta);
+  saveState("hg_theme_images", images);
+}
+
+let _storageSizeTimer = null;
+let _softWarnShown = false;
+
 function saveState(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-    checkStorageSize();
+    // Debounce the size check — runs at most once per 2s regardless of write frequency
+    clearTimeout(_storageSizeTimer);
+    _storageSizeTimer = setTimeout(() => checkStorageSize(), 2000);
   } catch (e) {
     if (e instanceof DOMException && (e.name === "QuotaExceededError" || e.name === "NS_ERROR_DOM_QUOTA_REACHED")) {
       alert("[Harold Grayblood] Storage is full — your last change could not be saved.\n\nTo free space, go to Settings → Reset All Data, or remove gallery images and background photos.");
@@ -115,8 +154,12 @@ function checkStorageSize() {
     }
   }
   const mb = (total / 1024 / 1024).toFixed(2);
-  if (total > 3 * 1024 * 1024) {
-    console.warn(`[HG] Storage usage: ${mb}MB — approaching localStorage limit`);
+  if (total > 3 * 1024 * 1024 && !_softWarnShown) {
+    _softWarnShown = true;
+    alert(`[Harold Grayblood] Storage is getting full (${mb}MB used).\n\nConsider removing gallery images or background photos to avoid losing data. You can reset all data in The Forge → Danger Zone.`);
+  }
+  if (total <= 3 * 1024 * 1024) {
+    _softWarnShown = false; // reset if usage drops (e.g. after image removal)
   }
   return mb;
 }
@@ -147,17 +190,28 @@ export default function HaroldGrayblood() {
   const [episodes, setEpisodes]     = useState(() => loadState("hg_episodes", INIT_EPISODES));
   const [categories, setCategories] = useState(() => loadState("hg_categories", DEFAULT_CATEGORIES));
   const [gallery, setGallery]       = useState(() => loadState("hg_gallery", []));
-  const [themeSettings, setThemeSettings] = useState(() => loadState("hg_theme", defaultSettings()));
+  const [themeSettings, setThemeSettings] = useState(() => loadThemeSettings());
   const [mounted, setMounted]       = useState(false);
+  const [updateReady, setUpdateReady] = useState(false);
+  const [appVersion, setAppVersion]   = useState("");
 
-  useEffect(() => { setTimeout(() => setMounted(true), 80); checkStorageSize(); }, []);
+  useEffect(() => {
+    setTimeout(() => setMounted(true), 80);
+    checkStorageSize();
+    if (window.hgStorage?.getVersion) {
+      window.hgStorage.getVersion().then(v => setAppVersion(v || ""));
+    }
+    if (window.hgStorage?.onUpdateReady) {
+      window.hgStorage.onUpdateReady(() => setUpdateReady(true));
+    }
+  }, []);
 
   useEffect(() => saveState("hg_ideas", ideas), [ideas]);
   useEffect(() => saveState("hg_journal", journal), [journal]);
   useEffect(() => saveState("hg_episodes", episodes), [episodes]);
   useEffect(() => saveState("hg_categories", categories), [categories]);
   useEffect(() => saveState("hg_gallery", gallery), [gallery]);
-  useEffect(() => saveState("hg_theme", themeSettings), [themeSettings]);
+  useEffect(() => saveThemeSettings(themeSettings), [themeSettings]);
 
   const switchTab = (t) => { setTab(t); setAnimKey(k=>k+1); };
   const ts = themeSettings[tab] || themeSettings["skyrim"] || defaultTabTheme();
@@ -173,7 +227,7 @@ export default function HaroldGrayblood() {
         {tab==="journal"  && <JournalPage journal={journal} setJournal={setJournal} ts={ts} />}
         {tab==="youtube"  && <YouTubePage episodes={episodes} setEpisodes={setEpisodes} ts={ts} />}
         {tab==="gallery"  && <GalleryPage gallery={gallery} setGallery={setGallery} ts={ts} />}
-        {tab==="settings" && <SettingsPage themeSettings={themeSettings} updateTheme={updateTheme} ts={ts} />}
+        {tab==="settings" && <SettingsPage themeSettings={themeSettings} updateTheme={updateTheme} ts={ts} updateReady={updateReady} appVersion={appVersion} gallery={gallery} />}
       </div>
     </div>
   );
@@ -292,7 +346,7 @@ function Nav({ tab, setTab, ts }) {
               overflow:"hidden",
             }}
           >
-            <div style={{padding:"8px 14px 6px",fontSize:9,color:C.goldDim,letterSpacing:3,fontFamily:"'Cinzel',serif",borderBottom:`1px solid ${C.ashDim}`}}>JUMP TO</div>
+            <div style={{padding:"8px 14px 6px",fontSize:9,color:C.goldDim,letterSpacing:3,fontFamily:"'Cinzel',serif",borderBottom:`1px solid ${C.ashDim}`}}>THE ROAD</div>
             {SKYRIM_SUBTABS.map(sub => (
               <button
                 key={sub.id}
@@ -448,12 +502,12 @@ function IdeasPage({ ideas, setIdeas, categories, setCategories, ts }) {
         {["All",...categories].map(cat=>(
           <FilterBtn key={cat} active={filterCat===cat} onClick={()=>setFilterCat(cat)} accent={accent}>{cat}</FilterBtn>
         ))}
-        <button onClick={()=>setShowCatMgr(p=>!p)} style={{...ghostBtnStyle,fontSize:10,padding:"5px 12px"}}>⚙ Categories</button>
-        <button onClick={()=>setNewIdea({title:"",category:categories[0]||"",content:"",tags:[]})} style={{marginLeft:"auto",...accentBtnStyle(C.ember)}}>+ ADD IDEA</button>
+        <button onClick={()=>setShowCatMgr(p=>!p)} style={{...ghostBtnStyle,fontSize:10,padding:"5px 12px"}}>⚙ ORDER BY</button>
+        <button onClick={()=>setNewIdea({title:"",category:categories[0]||"",content:"",tags:[]})} style={{marginLeft:"auto",...accentBtnStyle(C.ember)}}>+ MARK THE LEDGER</button>
       </div>
       {showCatMgr && (
         <Box ts={ts} style={{marginBottom:20}}>
-          <FieldLabel accent={accent}>Manage Categories</FieldLabel>
+          <FieldLabel accent={accent}>ORDER THE CODEX</FieldLabel>
           <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
             {categories.map(cat=>(
               <div key={cat} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.03)",border:`1px solid ${C.ashDim}`,padding:"4px 10px"}}>
@@ -463,7 +517,7 @@ function IdeasPage({ ideas, setIdeas, categories, setCategories, ts }) {
             ))}
           </div>
           <div style={{display:"flex",gap:8}}>
-            <input value={newCatName} onChange={e=>setNewCatName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCategory()} placeholder="New category..." style={themedInput(ts)} />
+            <input value={newCatName} onChange={e=>setNewCatName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCategory()} placeholder="Name a new order..." style={themedInput(ts)} />
             <ActionBtn onClick={addCategory} accent={accent}>Add</ActionBtn>
           </div>
         </Box>
@@ -494,7 +548,7 @@ function IdeasPage({ ideas, setIdeas, categories, setCategories, ts }) {
           </div>
         ))}
       </div>
-      {filtered.length===0 && <EmptyState text="No ideas yet — add one above" />}
+      {filtered.length===0 && <EmptyState text="The ledger sits empty. Every great chronicle begins with a single thought scratched into parchment." />}
     </PageShell>
   );
 }
@@ -548,7 +602,7 @@ function JournalPage({ journal, setJournal, ts }) {
           );
         })}
       </div>
-      {journal.length===0&&!newEntry&&<EmptyState text="No entries yet — begin your story" />}
+      {journal.length===0&&!newEntry&&<EmptyState text="The pages are bare. The road behind you is long — it deserves to be remembered." />}
     </PageShell>
   );
 }
@@ -601,8 +655,8 @@ function JournalEntryForm({ entry, setEntry, onSave, onCancel, label, ts, accent
       <div style={{position:"relative",zIndex:1,padding:22}}>
         <div style={{fontSize:10,letterSpacing:3,color:C.goldDim,marginBottom:12}}>{label.toUpperCase()}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-          <input value={entry.date} onChange={e=>setEntry(n=>({...n,date:e.target.value}))} placeholder="Date..." style={{...kalamInput}} />
-          <input value={entry.title} onChange={e=>setEntry(n=>({...n,title:e.target.value}))} placeholder="Entry title..." style={kalamInput} />
+          <input value={entry.date} onChange={e=>setEntry(n=>({...n,date:e.target.value}))} placeholder="The date, if you recall..." style={{...kalamInput}} />
+          <input value={entry.title} onChange={e=>setEntry(n=>({...n,title:e.target.value}))} placeholder="Name this passage..." style={kalamInput} />
         </div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10,padding:"8px 10px",background:"rgba(0,0,0,0.4)",border:`1px solid rgba(138,101,32,0.25)`,alignItems:"center"}}>
           <select value={fmt.font} onChange={e=>setFmt("font",e.target.value)} style={{...toolInput,minWidth:150}}>{FONT_OPTIONS.map(f=><option key={f.value} value={f.value} style={{background:"#111"}}>{f.label}</option>)}</select>
@@ -613,8 +667,8 @@ function JournalEntryForm({ entry, setEntry, onSave, onCancel, label, ts, accent
           <div style={{width:1,height:20,background:C.ashDim}}/>
           {["left","center","right"].map(a=><ToggleBtn key={a} active={fmt.align===a} onClick={()=>setFmt("align",a)} label={a==="left"?"⬅":a==="center"?"☰":"➡"}/>)}
         </div>
-        <div style={{padding:"8px 12px",marginBottom:10,background:"rgba(196,160,90,0.08)",border:`1px solid rgba(138,101,32,0.2)`,fontFamily:fontFamilyMap(fmt.font),fontSize:Math.min(fmt.size,15),color:C.paper,fontWeight:fmt.bold?"700":"400",fontStyle:fmt.italic?"italic":"normal",textAlign:fmt.align}}>Preview: Harold Grayblood's hand...</div>
-        <textarea value={entry.body} onChange={e=>setEntry(n=>({...n,body:e.target.value}))} placeholder="Write your journal entry here..." style={{...kalamInput,width:"100%",minHeight:200,resize:"vertical",boxSizing:"border-box",marginBottom:14,lineHeight:2,fontFamily:fontFamilyMap(fmt.font),fontSize:fmt.size,fontWeight:fmt.bold?"700":"400",fontStyle:fmt.italic?"italic":"normal",textAlign:fmt.align}}/>
+        <div style={{padding:"8px 12px",marginBottom:10,background:"rgba(196,160,90,0.08)",border:`1px solid rgba(138,101,32,0.2)`,fontFamily:fontFamilyMap(fmt.font),fontSize:Math.min(fmt.size,15),color:C.paper,fontWeight:fmt.bold?"700":"400",fontStyle:fmt.italic?"italic":"normal",textAlign:fmt.align}}>— a sample of the hand —</div>
+        <textarea value={entry.body} onChange={e=>setEntry(n=>({...n,body:e.target.value}))} placeholder="Set quill to parchment. What did the road demand of you today?" style={{...kalamInput,width:"100%",minHeight:200,resize:"vertical",boxSizing:"border-box",marginBottom:14,lineHeight:2,fontFamily:fontFamilyMap(fmt.font),fontSize:fmt.size,fontWeight:fmt.bold?"700":"400",fontStyle:fmt.italic?"italic":"normal",textAlign:fmt.align}}/>
         <div style={{display:"flex",gap:8}}><ActionBtn onClick={onSave} accent={accent}>Save Entry</ActionBtn><ActionBtn onClick={onCancel}>Cancel</ActionBtn></div>
       </div>
     </div>
@@ -795,7 +849,7 @@ function YouTubePage({ episodes, setEpisodes, ts }) {
               </div>
             );
           })}
-          {filtered.length===0 && <EmptyState text="No episodes — add one above"/>}
+          {filtered.length===0 && <EmptyState text="No chronicles recorded. The deeds of Harold Grayblood wait to be witnessed."/>}
         </div>
       )}
     </PageShell>
@@ -864,7 +918,7 @@ function YouTubeCalendar({ episodes, setEpisodes, accent, ts, calSelectedEp, set
 
       {/* Right-click hint */}
       <div style={{padding:"6px 16px",background:"rgba(139,26,26,0.08)",borderBottom:`1px solid ${CAL_BORDER}`,fontSize:10,color:CAL_SUBTEXT,fontFamily:"'Cinzel',serif",letterSpacing:2,textAlign:"center"}}>
-        RIGHT-CLICK ANY DAY TO SCHEDULE A NEW EPISODE &nbsp;·&nbsp; CLICK AN EPISODE TO VIEW DETAILS
+        RIGHT-CLICK ANY DAY TO MARK A DATE FOR THE CHRONICLES &nbsp;·&nbsp; SELECT AN ENTRY TO VIEW THE PASSAGE
       </div>
 
       {/* Weekday header */}
@@ -972,7 +1026,7 @@ function YouTubeCalendar({ episodes, setEpisodes, accent, ts, calSelectedEp, set
           }}
         >
           <div style={{padding:"10px 16px",background:CAL_HDR_BG,borderBottom:`1px solid ${CAL_BORDER}`}}>
-            <div style={{fontSize:9,color:CAL_HDR_TXT,letterSpacing:3,fontFamily:"'Cinzel',serif",textTransform:"uppercase"}}>Schedule Episode</div>
+            <div style={{fontSize:9,color:CAL_HDR_TXT,letterSpacing:3,fontFamily:"'Cinzel',serif",textTransform:"uppercase"}}>MARK THE DATE</div>
             <div style={{fontSize:13,color:CAL_HDR_TXT,fontFamily:"'Crimson Text',Georgia,serif",marginTop:2}}>{ctxMenu.dateStr}</div>
           </div>
           <div style={{padding:"8px 0"}}>
@@ -982,12 +1036,12 @@ function YouTubeCalendar({ episodes, setEpisodes, accent, ts, calSelectedEp, set
               onMouseEnter={e=>e.currentTarget.style.background="rgba(139,26,26,0.08)"}
               onMouseLeave={e=>e.currentTarget.style.background="none"}
             >
-              📺 &nbsp; New episode on this date
+              📜 &nbsp; Open a new chronicle on this date
             </button>
             {(epsByDate[ctxMenu.dateStr]||[]).length > 0 && (
               <>
                 <div style={{height:1,background:CAL_BORDER,margin:"4px 0"}}/>
-                <div style={{padding:"4px 16px 2px",fontSize:9,color:CAL_SUBTEXT,letterSpacing:2,fontFamily:"'Cinzel',serif"}}>EPISODES THIS DAY</div>
+                <div style={{padding:"4px 16px 2px",fontSize:9,color:CAL_SUBTEXT,letterSpacing:2,fontFamily:"'Cinzel',serif"}}>CHRONICLES MARKED HERE</div>
                 {(epsByDate[ctxMenu.dateStr]||[]).map(ep=>{
                   const sc=STATUS_COLORS[ep.status]||STATUS_COLORS.planned;
                   return (
@@ -1009,7 +1063,7 @@ function YouTubeCalendar({ episodes, setEpisodes, accent, ts, calSelectedEp, set
             <button
               onClick={()=>setCtxMenu(null)}
               style={{display:"block",width:"100%",background:"none",border:"none",padding:"8px 16px",cursor:"pointer",textAlign:"left",fontFamily:"'Crimson Text',Georgia,serif",fontSize:13,color:CAL_SUBTEXT}}
-            >✕ &nbsp; Cancel</button>
+            >✕ &nbsp; Leave it unmarked</button>
           </div>
         </div>
       )}
@@ -1030,7 +1084,7 @@ function EpisodeForm({ ep, setEp, onSave, onCancel, label, accent, ts }) {
     <div style={{background:ts.boxBg||"rgba(0,0,0,0.8)",border:`1px solid ${C.goldDim}`,padding:18,marginBottom:18,backdropFilter:"blur(6px)"}}>
       <div style={{fontSize:10,letterSpacing:3,color:C.goldDim,marginBottom:12,fontFamily:"'Crimson Text',Georgia,serif"}}>{label.toUpperCase()}</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 80px 1fr",gap:10,marginBottom:10}}>
-        <input value={ep.title} onChange={e=>setEp(n=>({...n,title:e.target.value}))} placeholder="Episode title..." style={ytInput} />
+        <input value={ep.title} onChange={e=>setEp(n=>({...n,title:e.target.value}))} placeholder="Name this chapter..." style={ytInput} />
         <input value={ep.episode} onChange={e=>setEp(n=>({...n,episode:e.target.value}))} placeholder="Ep #" style={ytInput} />
         <select value={ep.status} onChange={e=>setEp(n=>({...n,status:e.target.value}))} style={{...ytInput,cursor:"pointer"}}>
           {EPISODE_STATUSES.map(s=><option key={s} value={s} style={{background:"#111"}}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
@@ -1047,10 +1101,10 @@ function EpisodeForm({ ep, setEp, onSave, onCancel, label, accent, ts }) {
         </div>
       </div>
       {ep.thumbnail && <img src={ep.thumbnail} alt="thumb preview" style={{height:80,marginBottom:10,border:`1px solid ${C.ashDim}`,objectFit:"cover"}}/>}
-      <textarea value={ep.description} onChange={e=>setEp(n=>({...n,description:e.target.value}))} placeholder="Description..." style={{...ytInput,width:"100%",minHeight:60,resize:"vertical",boxSizing:"border-box",marginBottom:10}}/>
-      <input value={ep.thumbnailName||""} onChange={e=>setEp(n=>({...n,thumbnailName:e.target.value}))} placeholder="Thumbnail concept / idea..." style={{...ytInput,width:"100%",boxSizing:"border-box",marginBottom:10}}/>
+      <textarea value={ep.description} onChange={e=>setEp(n=>({...n,description:e.target.value}))} placeholder="What unfolds in this chronicle..." style={{...ytInput,width:"100%",minHeight:60,resize:"vertical",boxSizing:"border-box",marginBottom:10}}/>
+      <input value={ep.thumbnailName||""} onChange={e=>setEp(n=>({...n,thumbnailName:e.target.value}))} placeholder="Vision for the face of this chapter..." style={{...ytInput,width:"100%",boxSizing:"border-box",marginBottom:10}}/>
       <input value={(ep.tags||[]).join(", ")} onChange={e=>setEp(n=>({...n,tags:e.target.value.split(",").map(t=>t.trim()).filter(Boolean)}))} placeholder="Tags: comma separated..." style={{...ytInput,width:"100%",boxSizing:"border-box",marginBottom:10}}/>
-      <textarea value={ep.notes} onChange={e=>setEp(n=>({...n,notes:e.target.value}))} placeholder="Production notes..." style={{...ytInput,width:"100%",minHeight:50,resize:"vertical",boxSizing:"border-box",marginBottom:14}}/>
+      <textarea value={ep.notes} onChange={e=>setEp(n=>({...n,notes:e.target.value}))} placeholder="Notes from the forge..." style={{...ytInput,width:"100%",minHeight:50,resize:"vertical",boxSizing:"border-box",marginBottom:14}}/>
       <div style={{display:"flex",gap:8}}><ActionBtn onClick={onSave} accent={accent}>Save</ActionBtn><ActionBtn onClick={onCancel}>Cancel</ActionBtn></div>
     </div>
   );
@@ -1067,26 +1121,43 @@ function GalleryPage({ gallery, setGallery, ts }) {
   const handleUpload = (e) => {
     const files = Array.from(e.target.files);
     files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (ev) => setGallery(p=>[...p,{id:Date.now()+Math.random(),src:ev.target.result,name:file.name,caption:"",tag:""}]);
-      reader.readAsDataURL(file);
+      if (window.hgStorage?.saveImage) {
+        // Electron path: save to file system
+        const id = Date.now() + Math.random();
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          await window.hgStorage.saveImage(id, ev.target.result, file.type, file.name);
+          setGallery(p => [...p, { id, src: `hgdata://images/${id}`, name: file.name, caption: "", tag: "" }]);
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        // Dev/web fallback: base64
+        const reader = new FileReader();
+        reader.onload = (ev) => setGallery(p => [...p, { id: Date.now() + Math.random(), src: ev.target.result, name: file.name, caption: "", tag: "" }]);
+        reader.readAsDataURL(file);
+      }
     });
     e.target.value = "";
   };
 
   const updateGalleryItem = (id,key,val) => setGallery(p=>p.map(g=>g.id===id?{...g,[key]:val}:g));
-  const removeGalleryItem = (id) => { setGallery(p=>p.filter(g=>g.id!==id)); if(lightbox?.id===id) setLightbox(null); };
+  const removeGalleryItem = (id) => {
+    const img = gallery.find(g => g.id === id);
+    if (img?.src?.startsWith("hgdata://")) window.hgStorage?.deleteImage?.(id);
+    setGallery(p=>p.filter(g=>g.id!==id));
+    if(lightbox?.id===id) setLightbox(null);
+  };
 
   return (
     <PageShell ts={ts}>
       <PageHeader title="Gallery" rune="🖼" accent={accent} />
       <div style={{display:"flex",gap:10,marginBottom:24,alignItems:"center"}}>
         <input ref={fileRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleUpload}/>
-        <button onClick={()=>fileRef.current.click()} style={accentBtnStyle(accent)}>+ UPLOAD IMAGES</button>
-        <span style={{fontSize:12,color:C.ash,fontFamily:"'Crimson Text',Georgia,serif"}}>{gallery.length} image{gallery.length!==1?"s":""}</span>
+        <button onClick={()=>fileRef.current.click()} style={accentBtnStyle(accent)}>+ ADD TO THE GALLERY</button>
+        <span style={{fontSize:12,color:C.ash,fontFamily:"'Crimson Text',Georgia,serif"}}>{gallery.length} relic{gallery.length!==1?"s":""} preserved</span>
       </div>
 
-      {gallery.length===0 && <EmptyState text="No images yet — upload some above"/>}
+      {gallery.length===0 && <EmptyState text="The gallery stands bare as a looted barrow. The world of Skyrim is worth remembering in image."/>}
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:14}}>
         {gallery.map(img=>(
@@ -1121,8 +1192,10 @@ function GalleryPage({ gallery, setGallery, ts }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // SETTINGS PAGE
 // ══════════════════════════════════════════════════════════════════════════════
-function SettingsPage({ themeSettings, updateTheme, ts }) {
+function SettingsPage({ themeSettings, updateTheme, ts, updateReady, appVersion, gallery }) {
   const [activeTab, setActiveTab] = useState("skyrim");
+  const [importMsg, setImportMsg] = useState("");
+  const [showGalleryPicker, setShowGalleryPicker] = useState(false);
   const s = themeSettings[activeTab] || defaultTabTheme();
   const accent = ts.accentColor || C.gold;
   const fileRef = useRef();
@@ -1130,29 +1203,111 @@ function SettingsPage({ themeSettings, updateTheme, ts }) {
   const handleBgUpload = (e) => {
     const files = Array.from(e.target.files);
     files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (ev) => updateTheme(activeTab,"bgImages",[...(themeSettings[activeTab].bgImages||[]),ev.target.result]);
-      reader.readAsDataURL(file);
+      if (window.hgStorage?.saveImage) {
+        // Electron path
+        const id = Date.now() + Math.random();
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          await window.hgStorage.saveImage(id, ev.target.result, file.type, file.name);
+          updateTheme(activeTab, "bgImages", [...(themeSettings[activeTab].bgImages || []), `hgdata://images/${id}`]);
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        const reader = new FileReader();
+        reader.onload = (ev) => updateTheme(activeTab, "bgImages", [...(themeSettings[activeTab].bgImages || []), ev.target.result]);
+        reader.readAsDataURL(file);
+      }
     });
-    e.target.value="";
+    e.target.value = "";
   };
 
   const removeBgImage = (idx) => {
-    const imgs = [...(s.bgImages||[])];
-    imgs.splice(idx,1);
-    updateTheme(activeTab,"bgImages",imgs);
+    const imgs = [...(s.bgImages || [])];
+    const removed = imgs[idx];
+    if (removed?.startsWith("hgdata://")) {
+      const id = removed.replace("hgdata://images/", "").split("/")[0];
+      window.hgStorage?.deleteImage?.(id);
+    }
+    imgs.splice(idx, 1);
+    updateTheme(activeTab, "bgImages", imgs);
+  };
+
+  const exportJSON = async () => {
+    const keys = ["hg_ideas","hg_journal","hg_episodes","hg_categories","hg_gallery","hg_theme_meta","hg_theme_images"];
+    const data = { version: 1, exportedAt: new Date().toISOString() };
+    keys.forEach(k => { const v = localStorage.getItem(k); if (v !== null) data[k] = JSON.parse(v); });
+    const imgs = await window.hgStorage?.readAllImages?.() ?? {};
+    data._images = imgs;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `harold-grayblood-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportMarkdown = () => {
+    const journal = JSON.parse(localStorage.getItem("hg_journal") || "[]");
+    const lines = journal.map(e => {
+      const parts = [`## ${e.title || "Untitled"}`, `*${e.date || ""}*`, "", e.body || ""];
+      return parts.join("\n");
+    });
+    const md = `# Harold Grayblood — Journal\n\n${lines.join("\n\n---\n\n")}`;
+    const blob = new Blob([md], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `harold-grayblood-journal-${new Date().toISOString().slice(0,10)}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importJSON = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const keys = ["hg_ideas","hg_journal","hg_episodes","hg_categories","hg_gallery","hg_theme_meta","hg_theme_images"];
+        const hasAny = keys.some(k => k in data);
+        if (!hasAny) { setImportMsg("Invalid backup file — no recognised data found."); return; }
+        if (!window.confirm("This will replace all your current data with the backup. Continue?")) return;
+        keys.forEach(k => { if (k in data) localStorage.setItem(k, JSON.stringify(data[k])); });
+        // Restore hgdata:// images if present
+        if (data._images && window.hgStorage?.saveImage) {
+          for (const [id, dataUrl] of Object.entries(data._images)) {
+            const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+            if (!match) continue;
+            const mime = match[1];
+            const b64 = match[2];
+            const bin = atob(b64);
+            const ab = new ArrayBuffer(bin.length);
+            const view = new Uint8Array(ab);
+            for (let i = 0; i < bin.length; i++) view[i] = bin.charCodeAt(i);
+            await window.hgStorage.saveImage(id, ab, mime, id);
+          }
+        }
+        window.location.reload();
+      } catch {
+        setImportMsg("Could not read file — make sure it is a valid Harold Grayblood backup.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
   };
 
   const resetAllData = () => {
     if (!window.confirm("Reset ALL data? This will wipe all ideas, journal entries, episodes, gallery images, and theme settings. This cannot be undone.")) return;
-    ["hg_ideas","hg_journal","hg_episodes","hg_categories","hg_gallery","hg_theme"]
+    ["hg_ideas","hg_journal","hg_episodes","hg_categories","hg_gallery","hg_theme_meta","hg_theme_images"]
       .forEach(k => localStorage.removeItem(k));
     window.location.reload();
   };
 
   return (
     <PageShell ts={ts}>
-      <PageHeader title="Settings" rune="⚙" accent={accent}/>
+      <PageHeader title="The Forge" rune="⚙" accent={accent}/>
       <div style={{display:"grid",gridTemplateColumns:"200px 1fr",gap:24,alignItems:"start"}}>
         {/* Tab selector */}
         <div style={{display:"flex",flexDirection:"column",gap:4}}>
@@ -1169,7 +1324,31 @@ function SettingsPage({ themeSettings, updateTheme, ts }) {
           <Box ts={ts}>
             <FieldLabel accent={accent}>Background Images — {TAB_LABELS[activeTab]}</FieldLabel>
             <input ref={fileRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleBgUpload}/>
-            <button onClick={()=>fileRef.current.click()} style={{...ghostBtnStyle,marginBottom:12}}>+ Upload Background Photos</button>
+            <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+              <button onClick={()=>fileRef.current.click()} style={ghostBtnStyle}>+ Upload Background Photos</button>
+              <button onClick={()=>setShowGalleryPicker(p=>!p)} style={ghostBtnStyle}>🖼 Pick from Gallery</button>
+            </div>
+            {showGalleryPicker && (
+              <div style={{marginBottom:12,border:`1px solid ${C.ashDim}`,padding:10}}>
+                {(gallery||[]).length === 0
+                  ? <div style={{fontSize:11,color:C.ash,fontStyle:"italic"}}>No gallery images yet.</div>
+                  : <div style={{display:"flex",gap:8,flexWrap:"wrap",maxHeight:200,overflowY:"auto"}}>
+                      {(gallery||[]).map(img=>(
+                        <div
+                          key={img.id}
+                          title={img.name}
+                          onClick={()=>{ updateTheme(activeTab,"bgImages",[...(themeSettings[activeTab].bgImages||[]),img.src]); setShowGalleryPicker(false); }}
+                          style={{cursor:"pointer",border:`2px solid ${C.ashDim}`,transition:"border-color 0.15s"}}
+                          onMouseEnter={e=>e.currentTarget.style.borderColor=accent}
+                          onMouseLeave={e=>e.currentTarget.style.borderColor=C.ashDim}
+                        >
+                          <img src={img.src} alt={img.name} style={{width:80,height:50,objectFit:"cover",display:"block"}}/>
+                        </div>
+                      ))}
+                    </div>
+                }
+              </div>
+            )}
             {s.bgImages?.length>0 && (
               <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
                 {s.bgImages.map((img,i)=>(
@@ -1223,10 +1402,40 @@ function SettingsPage({ themeSettings, updateTheme, ts }) {
           <Box ts={ts}>
             <FieldLabel accent={accent}>Preview</FieldLabel>
             <div style={{padding:"16px 20px",background:s.boxBg||"rgba(0,0,0,0.7)",border:`1px solid ${s.accentColor||C.gold}`,borderTop:`2px solid ${s.accentColor||C.gold}`}}>
-              <div style={{fontSize:10,letterSpacing:3,color:s.accentColor||C.gold,marginBottom:6}}>PREVIEW HEADER</div>
-              <div style={{fontSize:16,color:s.fontColor||C.cream}}>This is how your tab will look</div>
-              <div style={{fontSize:12,color:C.ash,marginTop:4}}>Background and color theme applied</div>
+              <div style={{fontSize:10,letterSpacing:3,color:s.accentColor||C.gold,marginBottom:6}}>THE THRESHOLD</div>
+              <div style={{fontSize:16,color:s.fontColor||C.cream}}>As the embers settle, so shall your colours.</div>
+              <div style={{fontSize:12,color:C.ash,marginTop:4}}>The hearthstone holds.</div>
             </div>
+          </Box>
+
+          {/* ── Data & Backup ── */}
+          <Box ts={ts}>
+            <FieldLabel accent={accent}>Data &amp; Backup</FieldLabel>
+            <div style={{fontSize:12,color:C.ash,marginBottom:14,lineHeight:1.7}}>
+              Export your data as a JSON backup or readable Markdown journal. Import a backup to restore all data.
+              {appVersion && <span style={{marginLeft:12,color:C.goldDim}}>v{appVersion}</span>}
+            </div>
+            {updateReady && (
+              <button
+                onClick={() => window.hgStorage?.installUpdate?.()}
+                style={{display:"block",marginBottom:14,background:"rgba(212,168,67,0.15)",border:`1px solid ${C.gold}`,color:C.gold,padding:"9px 22px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:2}}
+              >
+                ⬇ Update Ready — Restart to Install
+              </button>
+            )}
+            <div style={{display:"flex",flexWrap:"wrap",gap:10,marginBottom:10}}>
+              <button onClick={exportJSON} style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${C.ashDim}`,color:C.ash,padding:"8px 18px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:2}}>
+                Export All Data (JSON)
+              </button>
+              <button onClick={exportMarkdown} style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${C.ashDim}`,color:C.ash,padding:"8px 18px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:2}}>
+                Export Journal (Markdown)
+              </button>
+              <label style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${C.ashDim}`,color:C.ash,padding:"8px 18px",cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:2}}>
+                Import Backup (JSON)
+                <input type="file" accept=".json" style={{display:"none"}} onChange={importJSON}/>
+              </label>
+            </div>
+            {importMsg && <div style={{fontSize:12,color:C.red,marginTop:6}}>{importMsg}</div>}
           </Box>
 
           {/* ── Danger Zone ── */}
