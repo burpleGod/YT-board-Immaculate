@@ -46,8 +46,8 @@ document.head.appendChild(styleEl);
 // ── Constants ──────────────────────────────────────────────────────────────
 const RUNES = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ".split("");
 const YT_CHANNEL = "https://www.youtube.com/@AntlamTE";
-const TABS = ["skyrim","ideas","journal","youtube","gallery","settings"];
-const TAB_LABELS = { skyrim:"⚔ Skyrim", ideas:"📜 Ideas", journal:"✒ Journal", youtube:"▶ YouTube", gallery:"🖼 Gallery", settings:"⚙ The Forge" };
+const TABS = ["youtube","skyrim","gallery","settings"];
+const TAB_LABELS = { skyrim:"⚔ Skyrim", youtube:"▶ YouTube", gallery:"🖼 Gallery", settings:"⚙ The Forge" };
 const SKYRIM_SUBTABS = [
   { id:"ideas",   icon:"📜", label:"Ideas Board" },
   { id:"journal", icon:"✒", label:"Journal"      },
@@ -183,13 +183,14 @@ const INIT_EPISODES = [
 // ROOT
 // ══════════════════════════════════════════════════════════════════════════════
 export default function HaroldGrayblood() {
-  const [tab, setTab]               = useState("skyrim");
+  const [tab, setTab]               = useState("youtube");
   const [animKey, setAnimKey]       = useState(0);
   const [ideas, setIdeas]           = useState(() => loadState("hg_ideas", INIT_IDEAS));
   const [journal, setJournal]       = useState(() => loadState("hg_journal", INIT_JOURNAL));
   const [episodes, setEpisodes]     = useState(() => loadState("hg_episodes", INIT_EPISODES));
   const [categories, setCategories] = useState(() => loadState("hg_categories", DEFAULT_CATEGORIES));
   const [gallery, setGallery]       = useState(() => loadState("hg_gallery", []));
+  const [galleryCategories, setGalleryCategories] = useState(() => loadState("hg_gallery_categories", ["Screenshots","Characters","Landscapes","Concept Art"]));
   const [themeSettings, setThemeSettings] = useState(() => loadThemeSettings());
   const [mounted, setMounted]       = useState(false);
   const [updateReady, setUpdateReady] = useState(false);
@@ -211,10 +212,11 @@ export default function HaroldGrayblood() {
   useEffect(() => saveState("hg_episodes", episodes), [episodes]);
   useEffect(() => saveState("hg_categories", categories), [categories]);
   useEffect(() => saveState("hg_gallery", gallery), [gallery]);
+  useEffect(() => saveState("hg_gallery_categories", galleryCategories), [galleryCategories]);
   useEffect(() => saveThemeSettings(themeSettings), [themeSettings]);
 
   const switchTab = (t) => { setTab(t); setAnimKey(k=>k+1); };
-  const ts = themeSettings[tab] || themeSettings["skyrim"] || defaultTabTheme();
+  const ts = themeSettings[tab] || themeSettings["youtube"] || defaultTabTheme();
   const updateTheme = (tabKey, key, val) => setThemeSettings(p => ({ ...p, [tabKey]: { ...p[tabKey], [key]: val } }));
 
   return (
@@ -226,7 +228,7 @@ export default function HaroldGrayblood() {
         {tab==="ideas"    && <IdeasPage ideas={ideas} setIdeas={setIdeas} categories={categories} setCategories={setCategories} ts={ts} />}
         {tab==="journal"  && <JournalPage journal={journal} setJournal={setJournal} ts={ts} />}
         {tab==="youtube"  && <YouTubePage episodes={episodes} setEpisodes={setEpisodes} ts={ts} />}
-        {tab==="gallery"  && <GalleryPage gallery={gallery} setGallery={setGallery} ts={ts} />}
+        {tab==="gallery"  && <GalleryPage gallery={gallery} setGallery={setGallery} ts={ts} galleryCategories={galleryCategories} setGalleryCategories={setGalleryCategories} />}
         {tab==="settings" && <SettingsPage themeSettings={themeSettings} updateTheme={updateTheme} ts={ts} updateReady={updateReady} appVersion={appVersion} gallery={gallery} />}
       </div>
     </div>
@@ -276,38 +278,14 @@ function Nav({ tab, setTab, ts }) {
   const hoverTimer = useRef(null);
 
   const showDropdown  = () => { clearTimeout(hoverTimer.current); setSkyrimHover(true); };
-  const hideDropdown  = () => { hoverTimer.current = setTimeout(() => setSkyrimHover(false), 180); };
+  const hideDropdown  = () => { hoverTimer.current = setTimeout(() => setSkyrimHover(false), 300); };
 
   return (
     <nav style={{ display:"flex", justifyContent:"center", padding:"16px 0 0", gap:0, position:"relative", zIndex:50, flexWrap:"wrap" }}>
 
-      {/* ── YouTube Home shortcut ── */}
-      <a
-        href={YT_CHANNEL}
-        target="_blank"
-        rel="noreferrer"
-        style={{
-          background:"rgba(180,20,20,0.15)",
-          border:`1px solid rgba(220,50,50,0.4)`,
-          borderRight:"none",
-          color:"#ff6666",
-          padding:"8px 20px",
-          fontFamily:"'Cinzel',serif", fontSize:11, letterSpacing:2,
-          textTransform:"uppercase", textDecoration:"none",
-          display:"flex", alignItems:"center", gap:6,
-          backdropFilter:"blur(4px)",
-          transition:"all 0.2s",
-        }}
-        onMouseEnter={e=>{e.currentTarget.style.background="rgba(220,50,50,0.25)";}}
-        onMouseLeave={e=>{e.currentTarget.style.background="rgba(180,20,20,0.15)";}}
-        title="Open AntlamTE YouTube Channel"
-      >
-        ▶ AntlamTE
-      </a>
-
       {/* ── Skyrim tab with dropdown ── */}
       <div
-        style={{position:"relative"}}
+        style={{position:"relative", paddingBottom: skyrimHover ? 4 : 0}}
         onMouseEnter={showDropdown}
         onMouseLeave={hideDropdown}
       >
@@ -336,7 +314,7 @@ function Nav({ tab, setTab, ts }) {
             onMouseEnter={showDropdown}
             onMouseLeave={hideDropdown}
             style={{
-              position:"absolute", top:"100%", left:0, zIndex:100,
+              position:"absolute", top:"100%", marginTop:-4, left:0, zIndex:100,
               minWidth:180,
               background:"rgba(8,5,2,0.97)",
               border:`1px solid ${accent}`,
@@ -1113,27 +1091,28 @@ function EpisodeForm({ ep, setEp, onSave, onCancel, label, accent, ts }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // GALLERY PAGE
 // ══════════════════════════════════════════════════════════════════════════════
-function GalleryPage({ gallery, setGallery, ts }) {
+function GalleryPage({ gallery, setGallery, ts, galleryCategories, setGalleryCategories }) {
   const fileRef  = useRef();
   const [lightbox, setLightbox] = useState(null);
+  const [filterCat, setFilterCat] = useState("All");
+  const [showCatMgr, setShowCatMgr] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
   const accent = ts.accentColor || C.gold;
 
   const handleUpload = (e) => {
     const files = Array.from(e.target.files);
     files.forEach(file => {
       if (window.hgStorage?.saveImage) {
-        // Electron path: save to file system
         const id = Date.now() + Math.random();
         const reader = new FileReader();
         reader.onload = async (ev) => {
           await window.hgStorage.saveImage(id, ev.target.result, file.type, file.name);
-          setGallery(p => [...p, { id, src: `hgdata://images/${id}`, name: file.name, caption: "", tag: "" }]);
+          setGallery(p => [...p, { id, src: `hgdata://images/${id}`, name: file.name, caption: "", tag: "", category: "Uncategorized" }]);
         };
         reader.readAsArrayBuffer(file);
       } else {
-        // Dev/web fallback: base64
         const reader = new FileReader();
-        reader.onload = (ev) => setGallery(p => [...p, { id: Date.now() + Math.random(), src: ev.target.result, name: file.name, caption: "", tag: "" }]);
+        reader.onload = (ev) => setGallery(p => [...p, { id: Date.now() + Math.random(), src: ev.target.result, name: file.name, caption: "", tag: "", category: "Uncategorized" }]);
         reader.readAsDataURL(file);
       }
     });
@@ -1147,20 +1126,49 @@ function GalleryPage({ gallery, setGallery, ts }) {
     setGallery(p=>p.filter(g=>g.id!==id));
     if(lightbox?.id===id) setLightbox(null);
   };
+  const addCategory = () => { const n=newCatName.trim(); if(!n||galleryCategories.includes(n)) return; setGalleryCategories(p=>[...p,n]); setNewCatName(""); };
+  const removeCategory = (cat) => { setGalleryCategories(p=>p.filter(c=>c!==cat)); setGallery(p=>p.map(g=>g.category===cat?{...g,category:"Uncategorized"}:g)); if(filterCat===cat) setFilterCat("All"); };
+
+  const filtered = filterCat==="All" ? gallery : gallery.filter(g=>(g.category||"Uncategorized")===filterCat);
 
   return (
     <PageShell ts={ts}>
       <PageHeader title="Gallery" rune="🖼" accent={accent} />
-      <div style={{display:"flex",gap:10,marginBottom:24,alignItems:"center"}}>
+      <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"center"}}>
         <input ref={fileRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleUpload}/>
         <button onClick={()=>fileRef.current.click()} style={accentBtnStyle(accent)}>+ ADD TO THE GALLERY</button>
         <span style={{fontSize:12,color:C.ash,fontFamily:"'Crimson Text',Georgia,serif"}}>{gallery.length} relic{gallery.length!==1?"s":""} preserved</span>
       </div>
 
-      {gallery.length===0 && <EmptyState text="The gallery stands bare as a looted barrow. The world of Skyrim is worth remembering in image."/>}
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16,alignItems:"center"}}>
+        {["All","Uncategorized",...galleryCategories].map(cat=>(
+          <FilterBtn key={cat} active={filterCat===cat} onClick={()=>setFilterCat(cat)} accent={accent}>{cat}</FilterBtn>
+        ))}
+        <button onClick={()=>setShowCatMgr(p=>!p)} style={{...ghostBtnStyle,fontSize:10,padding:"5px 12px"}}>⚙ MANAGE COLLECTIONS</button>
+      </div>
+
+      {showCatMgr && (
+        <Box ts={ts} style={{marginBottom:20}}>
+          <FieldLabel accent={accent}>Manage Collections</FieldLabel>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
+            {galleryCategories.map(cat=>(
+              <div key={cat} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.03)",border:`1px solid ${C.ashDim}`,padding:"4px 10px"}}>
+                <span style={{fontSize:12,color:ts.fontColor||C.cream}}>{cat}</span>
+                <button onClick={()=>removeCategory(cat)} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:14,padding:0}}>×</button>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <input value={newCatName} onChange={e=>setNewCatName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCategory()} placeholder="New collection name..." style={themedInput(ts)} />
+            <ActionBtn onClick={addCategory} accent={accent}>Add</ActionBtn>
+          </div>
+        </Box>
+      )}
+
+      {filtered.length===0 && <EmptyState text="The gallery stands bare as a looted barrow. The world of Skyrim is worth remembering in image."/>}
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:14}}>
-        {gallery.map(img=>(
+        {filtered.map(img=>(
           <div key={img.id} style={{background:ts.boxBg||"rgba(0,0,0,0.6)",border:`1px solid ${C.ashDim}`,overflow:"hidden",backdropFilter:"blur(4px)"}}>
             <div style={{position:"relative",cursor:"pointer"}} onClick={()=>setLightbox(img)}>
               <img src={img.src} alt={img.name} style={{width:"100%",height:150,objectFit:"cover",display:"block"}}/>
@@ -1168,6 +1176,10 @@ function GalleryPage({ gallery, setGallery, ts }) {
             </div>
             <div style={{padding:"10px 12px"}}>
               <input value={img.caption||""} onChange={e=>updateGalleryItem(img.id,"caption",e.target.value)} placeholder="Add caption..." style={{...themedInput(ts),fontSize:12,marginBottom:8,width:"100%",boxSizing:"border-box"}}/>
+              <select value={img.category||"Uncategorized"} onChange={e=>updateGalleryItem(img.id,"category",e.target.value)} style={{...themedInput(ts),fontSize:11,marginBottom:6,cursor:"pointer",width:"100%",boxSizing:"border-box"}}>
+                <option value="Uncategorized" style={{background:"#111"}}>Uncategorized</option>
+                {galleryCategories.map(c=><option key={c} value={c} style={{background:"#111"}}>{c}</option>)}
+              </select>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <input value={img.tag||""} onChange={e=>updateGalleryItem(img.id,"tag",e.target.value)} placeholder="Tag..." style={{...themedInput(ts),fontSize:11,width:"60%"}}/>
                 <button onClick={()=>removeGalleryItem(img.id)} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:18}}>×</button>
