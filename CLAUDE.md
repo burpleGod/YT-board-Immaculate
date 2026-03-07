@@ -217,10 +217,10 @@ src/
 
 |Phase|Task                                                              |Status   |
 |-----|------------------------------------------------------------------|---------|
-|A    |Extract constants.js + utils.js. Fix `hexToRgb()` for rgba inputs.|🔜 Next   |
-|B    |Extract atoms/                                                    |🔜 Pending|
-|C    |Extract molecules/                                                |🔜 Pending|
-|D    |Extract organisms/ (commit per organism)                          |🔜 Pending|
+|A    |Extract constants.js + utils.js. Fix `hexToRgb()` for rgba inputs.|✅ Done   |
+|B    |Extract atoms/                                                    |✅ Done   |
+|C    |Extract molecules/                                                |✅ Done   |
+|D    |Extract organisms/ (commit per organism)                          |🔜 Next   |
 |E    |Extract templates/ + pages/                                       |🔜 Pending|
 
 ### Refactor Rules
