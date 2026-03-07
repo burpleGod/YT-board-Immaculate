@@ -34,6 +34,11 @@ import { FilterBtn, ActionBtn, ToggleBtn } from "./atoms/Button.jsx";
 import { FieldLabel } from "./atoms/Label.jsx";
 import { EmptyState } from "./atoms/EmptyState.jsx";
 
+import { PageHeader } from "./molecules/PageHeader.jsx";
+import { StatusBadge } from "./molecules/StatusBadge.jsx";
+import { FilterBar } from "./molecules/FilterBar.jsx";
+import { CategoryManager } from "./molecules/CategoryManager.jsx";
+
 // ── Global styles ──────────────────────────────────────────────────────────
 const styleEl = document.createElement("style");
 styleEl.textContent = `
@@ -360,29 +365,12 @@ function IdeasPage({ ideas, setIdeas, categories, setCategories, ts }) {
   return (
     <PageShell ts={ts}>
       <PageHeader title="Idea Board" rune="📜" accent={accent} />
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20,alignItems:"center"}}>
-        {["All",...categories].map(cat=>(
-          <FilterBtn key={cat} active={filterCat===cat} onClick={()=>setFilterCat(cat)} accent={accent}>{cat}</FilterBtn>
-        ))}
+      <FilterBar options={["All",...categories]} activeFilter={filterCat} onFilterChange={setFilterCat} accent={accent}>
         <button onClick={()=>setShowCatMgr(p=>!p)} style={{...ghostBtnStyle,fontSize:10,padding:"5px 12px"}}>⚙ ORDER BY</button>
         <button onClick={()=>setNewIdea({title:"",category:categories[0]||"",content:"",tags:[]})} style={{marginLeft:"auto",...accentBtnStyle(C.ember)}}>+ MARK THE LEDGER</button>
-      </div>
+      </FilterBar>
       {showCatMgr && (
-        <Box ts={ts} style={{marginBottom:20}}>
-          <FieldLabel accent={accent}>ORDER THE CODEX</FieldLabel>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
-            {categories.map(cat=>(
-              <div key={cat} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.03)",border:`1px solid ${C.ashDim}`,padding:"4px 10px"}}>
-                <span style={{fontSize:12,color:ts.fontColor||C.cream}}>{cat}</span>
-                <button onClick={()=>removeCategory(cat)} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:14,padding:0}}>×</button>
-              </div>
-            ))}
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <input value={newCatName} onChange={e=>setNewCatName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCategory()} placeholder="Name a new order..." style={themedInput(ts)} />
-            <ActionBtn onClick={addCategory} accent={accent}>Add</ActionBtn>
-          </div>
-        </Box>
+        <CategoryManager categories={categories} onRemove={removeCategory} inputValue={newCatName} onInputChange={setNewCatName} onAdd={addCategory} label="ORDER THE CODEX" placeholder="Name a new order..." ts={ts} accent={accent} style={{marginBottom:20}}/>
       )}
       {newIdea && (
         <Box ts={ts} style={{marginBottom:20}}>
@@ -625,7 +613,7 @@ function YouTubePage({ episodes, setEpisodes, ts }) {
                 {/* Header */}
                 <div style={{padding:"14px 20px",borderBottom:`1px solid ${C.ashDim}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div style={{display:"flex",alignItems:"center",gap:14}}>
-                    <div style={{background:sc.bg,border:`1px solid ${sc.border}`,padding:"4px 10px",fontFamily:"'Crimson Text',Georgia,serif",fontSize:12,color:sc.text}}>EP{ep.episode||"?"}</div>
+                    <StatusBadge status={ep.status} label={`EP${ep.episode||"?"}`} style={{padding:"4px 10px",fontSize:12}}/>
                     <div>
                       <div style={{fontFamily:"'Cinzel',serif",fontSize:16,color:accent,letterSpacing:1}}>{ep.title}</div>
                       {ep.scheduledDate && <div style={{fontSize:11,color:C.ash,marginTop:2,fontFamily:"'Crimson Text',Georgia,serif"}}>📅 {ep.scheduledDate}</div>}
@@ -683,7 +671,7 @@ function YouTubePage({ episodes, setEpisodes, ts }) {
                 <div style={{padding:"12px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
                   <div style={{display:"flex",alignItems:"center",gap:12,flex:1}}>
                     {ep.thumbnail && <img src={ep.thumbnail} alt="thumb" style={{width:56,height:36,objectFit:"cover",border:`1px solid ${C.ashDim}`,flexShrink:0}}/>}
-                    <div style={{background:sc.bg,border:`1px solid ${sc.border}`,padding:"3px 8px",fontFamily:"'Crimson Text',Georgia,serif",fontSize:11,color:sc.text,whiteSpace:"nowrap"}}>EP{ep.episode||"?"}</div>
+                    <StatusBadge status={ep.status} label={`EP${ep.episode||"?"}`} style={{padding:"3px 8px",fontSize:11,whiteSpace:"nowrap"}}/>
                     <div>
                       <div style={{fontSize:15,color:isExp?accent:(ts.fontColor||C.cream),fontFamily:"'Crimson Text',Georgia,serif"}}>{ep.title}</div>
                       {ep.scheduledDate && <div style={{fontSize:10,color:C.ash,marginTop:2,fontFamily:"'Crimson Text',Georgia,serif"}}>📅 {ep.scheduledDate}</div>}
@@ -1016,29 +1004,12 @@ function GalleryPage({ gallery, setGallery, ts, galleryCategories, setGalleryCat
         <span style={{fontSize:12,color:C.ash,fontFamily:"'Crimson Text',Georgia,serif"}}>{gallery.length} relic{gallery.length!==1?"s":""} preserved</span>
       </div>
 
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16,alignItems:"center"}}>
-        {["All","Uncategorized",...galleryCategories].map(cat=>(
-          <FilterBtn key={cat} active={filterCat===cat} onClick={()=>setFilterCat(cat)} accent={accent}>{cat}</FilterBtn>
-        ))}
+      <FilterBar options={["All","Uncategorized",...galleryCategories]} activeFilter={filterCat} onFilterChange={setFilterCat} accent={accent} style={{marginBottom:16}}>
         <button onClick={()=>setShowCatMgr(p=>!p)} style={{...ghostBtnStyle,fontSize:10,padding:"5px 12px"}}>⚙ MANAGE COLLECTIONS</button>
-      </div>
+      </FilterBar>
 
       {showCatMgr && (
-        <Box ts={ts} style={{marginBottom:20}}>
-          <FieldLabel accent={accent}>Manage Collections</FieldLabel>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
-            {galleryCategories.map(cat=>(
-              <div key={cat} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.03)",border:`1px solid ${C.ashDim}`,padding:"4px 10px"}}>
-                <span style={{fontSize:12,color:ts.fontColor||C.cream}}>{cat}</span>
-                <button onClick={()=>removeCategory(cat)} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:14,padding:0}}>×</button>
-              </div>
-            ))}
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <input value={newCatName} onChange={e=>setNewCatName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCategory()} placeholder="New collection name..." style={themedInput(ts)} />
-            <ActionBtn onClick={addCategory} accent={accent}>Add</ActionBtn>
-          </div>
-        </Box>
+        <CategoryManager categories={galleryCategories} onRemove={removeCategory} inputValue={newCatName} onInputChange={setNewCatName} onAdd={addCategory} label="Manage Collections" placeholder="New collection name..." ts={ts} accent={accent} style={{marginBottom:20}}/>
       )}
 
       {filtered.length===0 && <EmptyState text="The gallery stands bare as a looted barrow. The world of Skyrim is worth remembering in image."/>}
@@ -1366,12 +1337,4 @@ function Box({ ts, children, style }) {
   );
 }
 
-function PageHeader({ title, rune, accent, fontOverride }) {
-  return (
-    <div style={{ marginBottom:22, paddingBottom:12, borderBottom:`1px solid ${C.ashDim}` }}>
-      <div style={{fontSize:10,color:C.goldDim,letterSpacing:4,marginBottom:5,textTransform:"uppercase",fontFamily:fontOverride||"'Cinzel',serif"}}>{rune} Harold Grayblood</div>
-      <h2 style={{margin:0,fontFamily:fontOverride||"'Cinzel',serif",fontSize:"clamp(15px,2.5vw,24px)",color:accent||C.gold,fontWeight:400,letterSpacing:3}}>{title}</h2>
-    </div>
-  );
-}
 
