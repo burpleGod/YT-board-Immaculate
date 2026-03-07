@@ -15,6 +15,21 @@ import "@fontsource/crimson-text/400-italic.css";
 import "@fontsource/crimson-text/600.css";
 import "@fontsource/crimson-text/600-italic.css";
 
+import {
+  C, RUNES, YT_CHANNEL, TABS, TAB_LABELS, SKYRIM_SUBTABS,
+  PARCHMENT, DEFAULT_CATEGORIES, EPISODE_STATUSES, STATUS_COLORS,
+  FONT_OPTIONS, SIZE_OPTIONS, defaultTabTheme, defaultSettings,
+  INIT_IDEAS, INIT_JOURNAL, INIT_EPISODES,
+  CAL_BG, CAL_BORDER, CAL_TEXT, CAL_SUBTEXT, CAL_EMPTY, CAL_HDR_BG, CAL_HDR_TXT,
+} from "./constants.js";
+
+import {
+  hexToRgb, loadState, saveState, loadThemeSettings, saveThemeSettings,
+  checkStorageSize, defaultFormat, fontFamilyMap,
+  themedInput, iconBtnStyle, accentBtnStyle, linkBtnStyle,
+  ghostBtnStyle, kalamInput, ytInput, toolInput,
+} from "./utils.js";
+
 // ── Global styles ──────────────────────────────────────────────────────────
 const styleEl = document.createElement("style");
 styleEl.textContent = `
@@ -43,141 +58,6 @@ styleEl.textContent = `
 `;
 document.head.appendChild(styleEl);
 
-// ── Constants ──────────────────────────────────────────────────────────────
-const RUNES = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ".split("");
-const YT_CHANNEL = "https://www.youtube.com/@AntlamTE";
-const TABS = ["youtube","skyrim","gallery","settings"];
-const TAB_LABELS = { skyrim:"⚔ Skyrim", youtube:"▶ YouTube", gallery:"🖼 Gallery", settings:"⚙ The Forge" };
-const SKYRIM_SUBTABS = [
-  { id:"ideas",   icon:"📜", label:"Ideas Board" },
-  { id:"journal", icon:"✒", label:"Journal"      },
-];
-
-const C = {
-  black:"#000000", ember:"#ff6b1a", gold:"#d4a843", goldDim:"#8a6520",
-  cream:"#e8d5a3", frost:"#8ab4d4", ash:"#666", ashDim:"#2a2a2a",
-  ink:"#160c03", inkMid:"#2d1a08", red:"#c0392b", green:"#28a050",
-};
-
-const PARCHMENT = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='600' height='600' fill='%23c4a05a'/%3E%3Crect width='600' height='600' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E`;
-
-const DEFAULT_CATEGORIES = ["Character Concept","Roleplay Rule","Quest Idea","Build Note","Lore Note","Mod Idea"];
-const EPISODE_STATUSES = ["planned","scripted","recorded","edited","uploaded"];
-const STATUS_COLORS = {
-  planned:  {bg:"rgba(100,100,100,0.15)",border:"#444",text:"#888"},
-  scripted: {bg:"rgba(138,101,32,0.15)", border:C.goldDim,text:C.goldDim},
-  recorded: {bg:"rgba(90,120,180,0.15)", border:"#5a78b4",text:"#8ab4d4"},
-  edited:   {bg:"rgba(180,120,30,0.15)", border:"#b4782a",text:"#d4a843"},
-  uploaded: {bg:"rgba(40,160,80,0.15)",  border:"#28a050",text:"#4cd080"},
-};
-const FONT_OPTIONS = [{value:"kalam",label:"Kalam (Handwritten)"},{value:"cinzel",label:"Cinzel (Formal)"},{value:"serif",label:"Georgia (Classic)"},{value:"monospace",label:"Mono (Runic)"}];
-const SIZE_OPTIONS = [14,16,18,20,22,24,28];
-
-// Default per-tab theme settings
-const defaultTabTheme = () => ({
-  bgImages: [],         // array of base64 strings
-  bgMode: "static",     // "static" | "slideshow" | "none"
-  bgOverlay: 0.5,       // 0-1
-  accentColor: C.gold,
-  boxBg: "rgba(0,0,0,0.75)",
-  fontColor: C.cream,
-  slideshowInterval: 5, // seconds
-});
-
-const defaultSettings = () => ({
-  skyrim:   { ...defaultTabTheme(), accentColor: C.gold },
-  ideas:    { ...defaultTabTheme() },
-  journal:  { ...defaultTabTheme() },
-  youtube:  { ...defaultTabTheme(), accentColor:"#ff4444" },
-  gallery:  { ...defaultTabTheme() },
-  settings: { ...defaultTabTheme() },
-});
-
-// ── Persistence utilities ──────────────────────────────────────────────────
-function loadState(key, fallback) {
-  try {
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-// Load themeSettings by merging lightweight meta + heavy images from separate keys
-function loadThemeSettings() {
-  const meta   = loadState("hg_theme_meta",   defaultSettings());
-  const images = loadState("hg_theme_images", {});
-  // Re-merge bgImages back into each tab's theme
-  const merged = { ...meta };
-  for (const tabKey of Object.keys(merged)) {
-    merged[tabKey] = { ...merged[tabKey], bgImages: images[tabKey] || [] };
-  }
-  return merged;
-}
-
-// Save themeSettings split across two keys: meta (small) + images (large)
-function saveThemeSettings(themeSettings) {
-  const meta   = {};
-  const images = {};
-  for (const [tabKey, tabTheme] of Object.entries(themeSettings)) {
-    const { bgImages, ...rest } = tabTheme;
-    meta[tabKey]   = rest;
-    images[tabKey] = bgImages || [];
-  }
-  saveState("hg_theme_meta",   meta);
-  saveState("hg_theme_images", images);
-}
-
-let _storageSizeTimer = null;
-let _softWarnShown = false;
-
-function saveState(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-    // Debounce the size check — runs at most once per 2s regardless of write frequency
-    clearTimeout(_storageSizeTimer);
-    _storageSizeTimer = setTimeout(() => checkStorageSize(), 2000);
-  } catch (e) {
-    if (e instanceof DOMException && (e.name === "QuotaExceededError" || e.name === "NS_ERROR_DOM_QUOTA_REACHED")) {
-      alert("[Harold Grayblood] Storage is full — your last change could not be saved.\n\nTo free space, go to Settings → Reset All Data, or remove gallery images and background photos.");
-    } else {
-      console.warn(`[HG] Failed to save "${key}":`, e);
-    }
-  }
-}
-
-function checkStorageSize() {
-  let total = 0;
-  for (const key in localStorage) {
-    if (key.startsWith("hg_")) {
-      total += (localStorage.getItem(key) || "").length;
-    }
-  }
-  const mb = (total / 1024 / 1024).toFixed(2);
-  if (total > 3 * 1024 * 1024 && !_softWarnShown) {
-    _softWarnShown = true;
-    alert(`[Harold Grayblood] Storage is getting full (${mb}MB used).\n\nConsider removing gallery images or background photos to avoid losing data. You can reset all data in The Forge → Danger Zone.`);
-  }
-  if (total <= 3 * 1024 * 1024) {
-    _softWarnShown = false; // reset if usage drops (e.g. after image removal)
-  }
-  return mb;
-}
-
-// ── Init data ──────────────────────────────────────────────────────────────
-const INIT_IDEAS = [
-  {id:1,category:"Character Concept",title:"The Oathbreaker's Redemption",content:"Harold once swore to protect a village, only to flee when the draugr came. Now he walks back toward danger — every time.",tags:["redemption","oath","guilt"]},
-  {id:2,category:"Roleplay Rule",title:"No Fast Travel",content:"Every step of Skyrim must be walked. The road is the story.",tags:["immersion","travel"]},
-  {id:3,category:"Quest Idea",title:"The Grey Blood Pact",content:"Find the origin of the Grayblood name. A blood oath made three generations ago with a Daedric Prince.",tags:["daedra","lore","family"]},
-];
-const INIT_JOURNAL = [
-  {id:1,date:"17th of Last Seed, 4E 201",title:"Helgen",format:{font:"kalam",size:18,align:"left",bold:false,italic:false},body:"They nearly took my head today. A dragon — gods, a real dragon — saved me without meaning to.\n\nThe Imperials had me on the block. I thought of nothing. Not family, not the debts, not the blood I owe. Just the cold stone and the headsman's shadow.\n\nThen the sky broke open.\n\nI ran with a Stormcloak. Ralof. He seems decent enough for a rebel. We parted ways at the keep's edge. I told him nothing about myself. That felt right."},
-];
-const INIT_EPISODES = [
-  {id:1,title:"Harold Grayblood — Origins",episode:1,status:"uploaded",description:"The beginning of Harold's journey. Helgen, the dragon attack, and the road to Riverwood.",thumbnail:null,thumbnailName:"",tags:["intro","helgen"],notes:"Strong opener. Hook was the execution scene.",scheduledDate:""},
-  {id:2,title:"The Road to Whiterun",episode:2,status:"recorded",description:"Harold walks every step. No fast travel. The plains of Whiterun hold more than they seem.",thumbnail:null,thumbnailName:"",tags:["travel","whiterun"],notes:"B-roll of sunrise worked great.",scheduledDate:"2025-02-28"},
-  {id:3,title:"Joining the Companions",episode:3,status:"planned",description:"Does a man of grey honour belong among warriors?",thumbnail:null,thumbnailName:"",tags:["companions","honour"],notes:"",scheduledDate:"2025-03-07"},
-];
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ROOT
@@ -835,14 +715,6 @@ function YouTubePage({ episodes, setEpisodes, ts }) {
 }
 
 // ── YouTube Calendar ───────────────────────────────────────────────────────
-const CAL_BG      = "#e8dcc8";
-const CAL_BORDER  = "#c4aa80";
-const CAL_TEXT    = "#5a4a30";
-const CAL_SUBTEXT = "#8a7a60";
-const CAL_EMPTY   = "#ddd3bc";
-const CAL_HDR_BG  = "#8b1a1a";
-const CAL_HDR_TXT = "#f5e8d8";
-
 function YouTubeCalendar({ episodes, setEpisodes, accent, ts, calSelectedEp, setCalSelectedEp, onCreateEpisode }) {
   const today = new Date();
   const [year, setYear]       = useState(today.getFullYear());
@@ -1522,34 +1394,3 @@ function ToggleBtn({ active, onClick, label, extraStyle }) {
 function EmptyState({ text }) {
   return <div style={{textAlign:"center",padding:"50px 20px",color:C.ashDim,fontSize:12,letterSpacing:4,textTransform:"uppercase"}}>{text}</div>;
 }
-
-// ── Style helpers ──────────────────────────────────────────────────────────
-function themedInput(ts) {
-  return { background:"rgba(0,0,0,0.4)", border:`1px solid ${C.ashDim}`, color:ts?.fontColor||C.cream, fontFamily:"'Cinzel',serif", fontSize:13, padding:"7px 11px", width:"100%", backdropFilter:"blur(4px)" };
-}
-
-function iconBtnStyle(color) {
-  return { background:"none", border:`1px solid ${color}`, color, cursor:"pointer", fontSize:10, padding:"4px 10px", fontFamily:"'Cinzel',serif", letterSpacing:2 };
-}
-
-function accentBtnStyle(color) {
-  return { background:`rgba(${hexToRgb(color)},0.12)`, border:`1px solid ${color}`, color, padding:"7px 18px", cursor:"pointer", fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:2, textDecoration:"none", display:"inline-block" };
-}
-
-function linkBtnStyle(border, bg, color) {
-  return { background:bg||"transparent", border:`1px solid ${border}`, color:color||border, padding:"8px 18px", textDecoration:"none", fontFamily:"'Crimson Text',Georgia,serif", fontSize:12, letterSpacing:1, display:"inline-block", transition:"all 0.2s" };
-}
-
-function hexToRgb(hex) {
-  if (!hex || !hex.startsWith("#")) return "212,168,67";
-  const r = parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
-  return `${r},${g},${b}`;
-}
-
-function defaultFormat() { return {font:"kalam",size:18,align:"left",bold:false,italic:false}; }
-function fontFamilyMap(f) { return {kalam:"'Kalam',cursive",cinzel:"'Cinzel',serif",serif:"Georgia,serif",monospace:"'Courier New',monospace"}[f]||"'Kalam',cursive"; }
-
-const ghostBtnStyle = { background:"rgba(255,255,255,0.04)", border:`1px solid ${C.ashDim}`, color:C.ash, cursor:"pointer", padding:"6px 14px", fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:2, transition:"all 0.2s" };
-const kalamInput = { background:"rgba(0,0,0,0.35)", border:`1px solid rgba(139,101,32,0.4)`, color:C.ink, fontFamily:"'Kalam',cursive", fontSize:16, padding:"8px 12px", width:"100%" };
-const ytInput = { background:"rgba(0,0,0,0.5)", border:`1px solid ${C.ashDim}`, color:C.cream, fontFamily:"'Crimson Text',Georgia,serif", fontSize:14, padding:"7px 11px", width:"100%" };
-const toolInput = { background:"rgba(255,255,255,0.05)", border:`1px solid ${C.ashDim}`, color:C.cream, fontFamily:"'Cinzel',serif", fontSize:11, padding:"4px 8px", cursor:"pointer" };
