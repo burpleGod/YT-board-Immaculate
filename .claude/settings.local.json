@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Desktop_Commander__start_process",
+      "mcp__Desktop_Commander__read_process_output",
+      "Bash(npm test)",
+      "Bash(npx vitest run)",
+      "Bash(npm install)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(where npx.cmd)",
+      "Bash(where node)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill //PID 1844 //F)",
+      "Bash(xargs grep -l -i \"harold\\\\|grayblood\\\\|YT-board\\\\|phase 3\\\\|refactor\")",
+      "Bash(cat \"C:/Users/malon/.claude/plugins/.install-manifests/\"*)",
+      "Bash(xargs grep -l \"harold\\\\|grayblood\")"
+    ]
+  }
+}
