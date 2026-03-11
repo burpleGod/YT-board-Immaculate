@@ -1,4 +1,4 @@
-# CLAUDE.md — AI Assistant Guide for YT-Board-Immaculate
+# CLAUDE.md — AI Assistant Guide for Harold Grayblood
 
 ## Project Overview
 
@@ -18,7 +18,7 @@ The codebase is intentionally a **monolithic single-component architecture** —
 ## Repository Structure
 
 ```
-YT-board-Immaculate/
+harold-grayblood/
 ├── index.html                      # Vite HTML entry point
 ├── package.json                    # Dependencies & scripts
 ├── vite.config.js                  # Vite + Vitest configuration
@@ -35,6 +35,21 @@ YT-board-Immaculate/
 ```
 
 **Note:** An Atomic Design refactor is approved and in progress (see Atomic Design section below). The structure above reflects the current state. Post-refactor structure will include `src/atoms/`, `src/molecules/`, `src/organisms/`, `src/templates/`, and `src/pages/`.
+
+-----
+
+## Source of Truth Registry
+
+| Resource | Path |
+|----------|------|
+| **Primary Source** | `C:\Users\malon\Documents\ClaudeCodeT\harold-grayblood\src\HaroldGrayblood.jsx` |
+| **Fallback** | `https://raw.githubusercontent.com/burpleGod/YT-board-Immaculate/refs/heads/main/src/HaroldGrayblood.jsx` |
+| **Electron Main** | `electron/main.cjs` |
+| **Electron Preload** | `electron/preload.cjs` |
+| **Context Pointer** | `CONTEXT.md` (max 15 lines, no data) |
+| **Agent Instructions** | `CLAUDE.md` (this file) |
+
+> Always verify source files exist at the primary path before planning. Fall back to the GitHub raw URL only if the local file is unavailable.
 
 -----
 
@@ -345,6 +360,33 @@ Auto-update is configured for GitHub Releases under `burpleGod/YT-board-Immacula
 1. The renderer shows an update notification banner.
 1. User clicks “Install” → `window.hgStorage.installUpdate()` → `autoUpdater.quitAndInstall()`.
 1. Releases must be published to GitHub under `burpleGod/YT-board-Immaculate` for updates to be detected.
+
+-----
+
+## Team Roles & Delegation
+
+Tag specialists using `@[role] request: [description]`. Do not begin blocked phases until the owner answers the open question.
+
+| Role | Owner | Domain | Current Blocker |
+|------|-------|--------|-----------------|
+| **PM** | Sarah | Approvals, task assignment | Blocks Phase 6: Launch model |
+| **Full Stack** | Karina | Implementation, data layer, onboarding | — |
+| **UI/UX** | — | Visuals, Atomic Design, shadcn migration | Blocks Phase 5A: shadcn install scope |
+| **QA** | — | Test coverage, accessibility pass | — |
+| **Backend** | — | Storage strategy, IPC layer, MCP server | Blocks Phase 4C: Profile import format |
+| **Security** | — | Input validation, XSS, audits | — |
+| **DevOps** | Mylo | Pipeline, releases, plugins | Blocks Phase 4B: Launcher vs single installer |
+| **Narrative** | Leonard | In-world copy, Harold vocabulary | — |
+
+-----
+
+## Compound Engineering (Mandatory)
+
+After every work unit, update documentation before closing the task. Do not skip this step.
+
+- **`docs/solutions/`** — Document bugs, root causes, and fixes.
+- **`docs/patterns/`** — Document newly discovered or established patterns.
+- **`docs/decisions/`** — Log locked architectural decisions (include Date and Owner).
 
 -----
 
