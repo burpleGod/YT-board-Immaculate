@@ -48,6 +48,8 @@ import { ParchmentView } from "./organisms/ParchmentView.jsx";
 import { JournalEntryRow } from "./organisms/JournalEntryRow.jsx";
 import { EpisodeRow } from "./organisms/EpisodeRow.jsx";
 import { EpisodeCard } from "./organisms/EpisodeCard.jsx";
+import { PageShell } from "./templates/PageShell.jsx";
+import { Box } from "./templates/Box.jsx";
 
 // ── Global styles ──────────────────────────────────────────────────────────
 const styleEl = document.createElement("style");
@@ -910,22 +912,4 @@ function SettingsPage({ themeSettings, updateTheme, ts, updateReady, appVersion,
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SHARED COMPONENTS
-// ══════════════════════════════════════════════════════════════════════════════
-function PageShell({ ts, children }) {
-  return (
-    <div style={{ padding:"26px 32px 80px", width:"100%", boxSizing:"border-box", position:"relative", zIndex:1 }}>
-      {children}
-    </div>
-  );
-}
-
-function Box({ ts, children, style }) {
-  return (
-    <div style={{ background:ts?.boxBg||"rgba(0,0,0,0.7)", border:`1px solid ${C.ashDim}`, padding:18, backdropFilter:"blur(6px)", ...style }}>
-      {children}
-    </div>
-  );
-}
 
