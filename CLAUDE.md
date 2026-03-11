@@ -11,30 +11,68 @@
 - **The Forge** — per-tab UI customizer (backgrounds, accent colors, overlays, slideshows)
 - **Auto-updater** — GitHub Releases integration via electron-updater
 
-The codebase is intentionally a **monolithic single-component architecture** — the vast majority of logic lives in `src/HaroldGrayblood.jsx`.
+The codebase follows an **Atomic Design architecture** — Phase 3 refactor is complete. `src/HaroldGrayblood.jsx` is the root component only (~128 lines); all page and UI logic lives in `src/atoms/`, `src/molecules/`, `src/organisms/`, `src/templates/`, and `src/pages/`.
 
 -----
 
 ## Repository Structure
 
 ```
-harold-grayblood/
+YT-board-Immaculate/
 ├── index.html                      # Vite HTML entry point
 ├── package.json                    # Dependencies & scripts
 ├── vite.config.js                  # Vite + Vitest configuration
 ├── src/
 │   ├── main.jsx                    # React DOM entry (renders HaroldGrayblood)
-│   ├── HaroldGrayblood.jsx         # MAIN FILE — entire app (~1600 lines)
+│   ├── HaroldGrayblood.jsx         # ROOT ONLY — state, effects, routing (~128 lines)
 │   ├── HaroldGrayblood.test.jsx    # Smoke tests
-│   └── test-setup.js               # Vitest setup (jest-dom + matchMedia mock)
+│   ├── test-setup.js               # Vitest setup (jest-dom + matchMedia mock)
+│   ├── constants.js                # C, TABS, TAB_LABELS, RUNES, STATUS_COLORS, etc.
+│   ├── utils.js                    # hexToRgb, loadState, saveState, style helpers
+│   ├── atoms/
+│   │   ├── Button.jsx              # FilterBtn, ActionBtn, ToggleBtn
+│   │   ├── Label.jsx               # FieldLabel
+│   │   ├── EmptyState.jsx
+│   │   └── Tag.jsx
+│   ├── molecules/
+│   │   ├── Nav.jsx
+│   │   ├── PageHeader.jsx
+│   │   ├── StatusBadge.jsx
+│   │   ├── FilterBar.jsx
+│   │   └── CategoryManager.jsx
+│   ├── organisms/
+│   │   ├── IdeaCard.jsx
+│   │   ├── JournalEntryRow.jsx
+│   │   ├── JournalEntryForm.jsx
+│   │   ├── FullscreenJournal.jsx
+│   │   ├── EpisodeRow.jsx
+│   │   ├── EpisodeCard.jsx
+│   │   ├── EpisodeForm.jsx
+│   │   ├── GalleryCard.jsx
+│   │   ├── ParchmentView.jsx
+│   │   ├── YouTubeCalendar.jsx
+│   │   └── ChannelBanner.jsx
+│   ├── templates/
+│   │   ├── PageShell.jsx
+│   │   ├── Box.jsx
+│   │   ├── TabBackground.jsx
+│   │   └── TwoColumnLayout.jsx
+│   └── pages/
+│       ├── SkyrimPage.jsx
+│       ├── IdeasPage.jsx
+│       ├── JournalPage.jsx
+│       ├── YouTubePage.jsx
+│       ├── GalleryPage.jsx
+│       └── SettingsPage.jsx
 ├── electron/
 │   ├── main.cjs                    # Electron main process (~200 lines)
 │   └── preload.cjs                 # Context-bridge IPC preload (~15 lines)
+├── docs/
+│   └── patterns/
+│       └── atomic-design-extraction.md
 ├── harold-grayblood-v3_4_1.jsx     # Archive/reference snapshot — do not edit
 └── README.md
 ```
-
-**Note:** An Atomic Design refactor is approved and in progress (see Atomic Design section below). The structure above reflects the current state. Post-refactor structure will include `src/atoms/`, `src/molecules/`, `src/organisms/`, `src/templates/`, and `src/pages/`.
 
 -----
 
@@ -42,7 +80,7 @@ harold-grayblood/
 
 | Resource | Path |
 |----------|------|
-| **Primary Source** | `C:\Users\malon\Documents\ClaudeCodeT\harold-grayblood\src\HaroldGrayblood.jsx` |
+| **Primary Source** | `C:\Users\malon\Documents\ClaudeCode\YT-board-Immaculate\src\HaroldGrayblood.jsx` |
 | **Fallback** | `https://raw.githubusercontent.com/burpleGod/YT-board-Immaculate/refs/heads/main/src/HaroldGrayblood.jsx` |
 | **Electron Main** | `electron/main.cjs` |
 | **Electron Preload** | `electron/preload.cjs` |
@@ -85,9 +123,9 @@ npm run preview          # Preview the Vite production build
 
 ## Architecture Deep-Dive
 
-### Single-Component Pattern
+### Atomic Design Pattern
 
-All page components (`SkyrimPage`, `IdeasPage`, `JournalPage`, `YouTubePage`, `GalleryPage`, `SettingsPage`) and all helper functions are defined **inside `src/HaroldGrayblood.jsx`**. See the Atomic Design section below for the approved refactor plan.
+All page components (`SkyrimPage`, `IdeasPage`, `JournalPage`, `YouTubePage`, `GalleryPage`, `SettingsPage`) live in `src/pages/`. UI primitives are in `src/atoms/`, `src/molecules/`, `src/organisms/`, and `src/templates/`. Constants and utilities are in `src/constants.js` and `src/utils.js`. `src/HaroldGrayblood.jsx` contains only state, effects, and the root render.
 
 ### State Management
 
@@ -178,55 +216,11 @@ window.hgStorage.installUpdate()          // → void
 
 -----
 
-## Atomic Design Refactor — Approved
+## Atomic Design Refactor — Complete
 
-**Status:** Approved by PM. Not yet executed. Awaiting return to local machine.
+**Status:** ✅ All phases complete (2026-03-11). `HaroldGrayblood.jsx` is now ~128 lines — root state, effects, and render only.
 
-The monolithic `HaroldGrayblood.jsx` is approved for refactoring into an Atomic Design component hierarchy. This is a structural refactor only — no visual changes, no behavioral changes, no new dependencies.
-
-### Approved File Structure (post-refactor)
-
-```
-src/
-├── main.jsx
-├── HaroldGrayblood.jsx       ← root only: state, routing, persistence
-├── constants.js              ← C, TABS, TAB_LABELS, RUNES, STATUS_COLORS etc.
-├── utils.js                  ← hexToRgb (fixed), loadState, saveState, etc.
-├── atoms/
-│   ├── Button.jsx
-│   ├── Input.jsx
-│   ├── Label.jsx
-│   ├── Tag.jsx
-│   ├── EmptyState.jsx
-│   └── Divider.jsx
-├── molecules/
-│   ├── FilterBar.jsx
-│   ├── CategoryManager.jsx
-│   ├── StatusBadge.jsx
-│   ├── FormRow.jsx
-│   └── PageHeader.jsx
-├── organisms/
-│   ├── IdeaCard.jsx
-│   ├── JournalEntryRow.jsx
-│   ├── EpisodeRow.jsx
-│   ├── EpisodeCard.jsx
-│   ├── EpisodeForm.jsx
-│   ├── JournalEntryForm.jsx
-│   ├── GalleryCard.jsx
-│   ├── YouTubeCalendar.jsx
-│   └── ChannelBanner.jsx
-├── templates/
-│   ├── PageShell.jsx
-│   ├── TwoColumnLayout.jsx
-│   └── TabBackground.jsx
-└── pages/
-    ├── SkyrimPage.jsx
-    ├── IdeasPage.jsx
-    ├── JournalPage.jsx
-    ├── YouTubePage.jsx
-    ├── GalleryPage.jsx
-    └── SettingsPage.jsx
-```
+The monolithic refactor into Atomic Design is finished. This was a structural refactor only — no visual changes, no behavioral changes, no new dependencies.
 
 ### Refactor Phase Plan
 
@@ -235,17 +229,16 @@ src/
 |A    |Extract constants.js + utils.js. Fix `hexToRgb()` for rgba inputs.|✅ Done   |
 |B    |Extract atoms/                                                    |✅ Done   |
 |C    |Extract molecules/                                                |✅ Done   |
-|D    |Extract organisms/ (commit per organism)                          |🔜 Next   |
-|E    |Extract templates/ + pages/                                       |🔜 Pending|
+|D    |Extract organisms/ (commit per organism)                          |✅ Done   |
+|E    |Extract templates/ + pages/                                       |✅ Done   |
 
-### Refactor Rules
+### Refactor Rules (preserved for Phase 4+ reference)
 
 - `npm test` must pass (1/1) after every phase before proceeding
 - `HaroldGrayblood.jsx` filename must never change
-- Inline styles preserved — no CSS files, no Tailwind
-- No visual or behavioral changes at any phase
-- Phase D: commit after each individual organism, not per phase
-- `hexToRgb()` must be fixed for rgba inputs during Phase A
+- Inline styles preserved — no CSS files, no Tailwind (until Phase 4)
+- No visual or behavioral changes during Phase 3
+- `hexToRgb()` fixed for rgba inputs in Phase A
 
 -----
 
@@ -253,7 +246,7 @@ src/
 
 ### Color System
 
-All colors are defined in the `C` object at the top of `HaroldGrayblood.jsx` (moving to `constants.js` during refactor):
+All colors are defined in the `C` object in `src/constants.js`:
 
 ```js
 C.black, C.ember, C.gold, C.ash, C.fog, ...
@@ -263,7 +256,7 @@ Always use `C.<n>` for colors — never hardcode hex values inline.
 
 ### Style Helpers
 
-Reusable style factories defined in `HaroldGrayblood.jsx`:
+Reusable style factories defined in `src/utils.js`:
 
 - `themedInput(theme)` — styled input/textarea
 - `ghostBtnStyle(theme)` — transparent button
@@ -338,7 +331,7 @@ Auto-update is configured for GitHub Releases under `burpleGod/YT-board-Immacula
 ## Important Constraints & Gotchas
 
 1. **`HaroldGrayblood.jsx` must never be renamed.** The test imports it by name. The filename is permanent.
-1. **Atomic Design refactor is approved.** Splitting into `atoms/`, `molecules/`, `organisms/`, `templates/`, and `pages/` is explicitly requested and in progress. Follow the phase plan above. Do not skip phases or merge phases without PM approval.
+1. **Atomic Design refactor is complete.** All layers — `atoms/`, `molecules/`, `organisms/`, `templates/`, and `pages/` — are extracted. `HaroldGrayblood.jsx` is root-only (~128 lines). Next structural work begins in Phase 4.
 1. **`harold-grayblood-v3_4_1.jsx`** at the repo root is an archived snapshot for reference only. Never modify or import it.
 1. **Images have two storage modes:**
 - `data:image/...;base64,...` — used in browser/localStorage mode
