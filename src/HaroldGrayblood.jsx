@@ -43,6 +43,7 @@ import { YouTubeCalendar } from "./organisms/YouTubeCalendar.jsx";
 import { EpisodeForm } from "./organisms/EpisodeForm.jsx";
 import { JournalEntryForm } from "./organisms/JournalEntryForm.jsx";
 import { IdeaCard } from "./organisms/IdeaCard.jsx";
+import { GalleryCard } from "./organisms/GalleryCard.jsx";
 
 // ── Global styles ──────────────────────────────────────────────────────────
 const styleEl = document.createElement("style");
@@ -727,23 +728,7 @@ function GalleryPage({ gallery, setGallery, ts, galleryCategories, setGalleryCat
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:14}}>
         {filtered.map(img=>(
-          <div key={img.id} style={{background:ts.boxBg||"rgba(0,0,0,0.6)",border:`1px solid ${C.ashDim}`,overflow:"hidden",backdropFilter:"blur(4px)"}}>
-            <div style={{position:"relative",cursor:"pointer"}} onClick={()=>setLightbox(img)}>
-              <img src={img.src} alt={img.name} style={{width:"100%",height:150,objectFit:"cover",display:"block"}}/>
-              <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0)",transition:"background 0.2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,0.3)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,0)"}/>
-            </div>
-            <div style={{padding:"10px 12px"}}>
-              <input value={img.caption||""} onChange={e=>updateGalleryItem(img.id,"caption",e.target.value)} placeholder="Add caption..." style={{...themedInput(ts),fontSize:12,marginBottom:8,width:"100%",boxSizing:"border-box"}}/>
-              <select value={img.category||"Uncategorized"} onChange={e=>updateGalleryItem(img.id,"category",e.target.value)} style={{...themedInput(ts),fontSize:11,marginBottom:6,cursor:"pointer",width:"100%",boxSizing:"border-box"}}>
-                <option value="Uncategorized" style={{background:"#111"}}>Uncategorized</option>
-                {galleryCategories.map(c=><option key={c} value={c} style={{background:"#111"}}>{c}</option>)}
-              </select>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <input value={img.tag||""} onChange={e=>updateGalleryItem(img.id,"tag",e.target.value)} placeholder="Tag..." style={{...themedInput(ts),fontSize:11,width:"60%"}}/>
-                <button onClick={()=>removeGalleryItem(img.id)} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:18}}>×</button>
-              </div>
-            </div>
-          </div>
+          <GalleryCard key={img.id} img={img} ts={ts} galleryCategories={galleryCategories} onOpenLightbox={setLightbox} onUpdate={updateGalleryItem} onRemove={removeGalleryItem} />
         ))}
       </div>
 
