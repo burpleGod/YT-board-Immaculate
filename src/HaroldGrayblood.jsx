@@ -42,6 +42,7 @@ import { ChannelBanner } from "./organisms/ChannelBanner.jsx";
 import { YouTubeCalendar } from "./organisms/YouTubeCalendar.jsx";
 import { EpisodeForm } from "./organisms/EpisodeForm.jsx";
 import { JournalEntryForm } from "./organisms/JournalEntryForm.jsx";
+import { IdeaCard } from "./organisms/IdeaCard.jsx";
 
 // ── Global styles ──────────────────────────────────────────────────────────
 const styleEl = document.createElement("style");
@@ -391,15 +392,7 @@ function IdeasPage({ ideas, setIdeas, categories, setCategories, ts }) {
       )}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
         {filtered.map(idea=>(
-          <div key={idea.id} onClick={()=>setExpandId(expandId===idea.id?null:idea.id)} style={{background:expandId===idea.id?`rgba(${hexToRgb(accent)},0.06)`:ts.boxBg||"rgba(0,0,0,0.6)",border:`1px solid ${expandId===idea.id?accent:C.ashDim}`,borderTop:`2px solid ${expandId===idea.id?accent:C.goldDim}`,padding:16,cursor:"pointer",transition:"all 0.2s",backdropFilter:"blur(6px)"}}>
-            <div style={{fontSize:9,letterSpacing:3,color:C.goldDim,textTransform:"uppercase",marginBottom:6}}>{idea.category}</div>
-            <div style={{fontSize:15,color:accent,marginBottom:8,letterSpacing:1}}>{idea.title}</div>
-            {expandId===idea.id && <div style={{fontSize:13,color:ts.fontColor||C.cream,lineHeight:1.8,marginBottom:10,opacity:0.9}}>{idea.content}</div>}
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{idea.tags.map(t=><span key={t} style={{fontSize:9,background:"rgba(138,101,32,0.2)",border:`1px solid ${C.ashDim}`,color:C.goldDim,padding:"1px 7px",letterSpacing:1}}>{t}</span>)}</div>
-              <button onClick={e=>removeIdea(idea.id,e)} style={{background:"none",border:"none",color:C.ashDim,cursor:"pointer",fontSize:18}}>×</button>
-            </div>
-          </div>
+          <IdeaCard key={idea.id} idea={idea} expandId={expandId} accent={accent} ts={ts} onExpand={()=>setExpandId(expandId===idea.id?null:idea.id)} onRemove={e=>{e.stopPropagation();removeIdea(idea.id,e);}} />
         ))}
       </div>
       {filtered.length===0 && <EmptyState text="The ledger sits empty. Every great chronicle begins with a single thought scratched into parchment." />}
