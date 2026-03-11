@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import "@fontsource/cinzel/400.css";
 import "@fontsource/cinzel/600.css";
 import "@fontsource/cinzel-decorative/400.css";
@@ -16,42 +16,15 @@ import "@fontsource/crimson-text/600.css";
 import "@fontsource/crimson-text/600-italic.css";
 
 import {
-  C, RUNES, YT_CHANNEL, TABS, TAB_LABELS, SKYRIM_SUBTABS,
-  PARCHMENT, DEFAULT_CATEGORIES, EPISODE_STATUSES, STATUS_COLORS,
-  FONT_OPTIONS, SIZE_OPTIONS, defaultTabTheme, defaultSettings,
+  C, DEFAULT_CATEGORIES, defaultTabTheme,
   INIT_IDEAS, INIT_JOURNAL, INIT_EPISODES,
-  CAL_BG, CAL_BORDER, CAL_TEXT, CAL_SUBTEXT, CAL_EMPTY, CAL_HDR_BG, CAL_HDR_TXT,
 } from "./constants.js";
 
 import {
-  hexToRgb, loadState, saveState, loadThemeSettings, saveThemeSettings,
-  checkStorageSize, defaultFormat, fontFamilyMap,
-  themedInput, iconBtnStyle, accentBtnStyle, linkBtnStyle,
-  ghostBtnStyle, kalamInput, ytInput, toolInput,
+  loadState, saveState, loadThemeSettings, saveThemeSettings, checkStorageSize,
 } from "./utils.js";
 
-import { FilterBtn, ActionBtn, ToggleBtn } from "./atoms/Button.jsx";
-import { FieldLabel } from "./atoms/Label.jsx";
-import { EmptyState } from "./atoms/EmptyState.jsx";
-
 import { Nav } from "./molecules/Nav.jsx";
-import { PageHeader } from "./molecules/PageHeader.jsx";
-import { StatusBadge } from "./molecules/StatusBadge.jsx";
-import { FilterBar } from "./molecules/FilterBar.jsx";
-import { CategoryManager } from "./molecules/CategoryManager.jsx";
-import { ChannelBanner } from "./organisms/ChannelBanner.jsx";
-import { YouTubeCalendar } from "./organisms/YouTubeCalendar.jsx";
-import { EpisodeForm } from "./organisms/EpisodeForm.jsx";
-import { JournalEntryForm } from "./organisms/JournalEntryForm.jsx";
-import { IdeaCard } from "./organisms/IdeaCard.jsx";
-import { GalleryCard } from "./organisms/GalleryCard.jsx";
-import { ParchmentView } from "./organisms/ParchmentView.jsx";
-import { JournalEntryRow } from "./organisms/JournalEntryRow.jsx";
-import { EpisodeRow } from "./organisms/EpisodeRow.jsx";
-import { EpisodeCard } from "./organisms/EpisodeCard.jsx";
-import { FullscreenJournal } from "./organisms/FullscreenJournal.jsx";
-import { PageShell } from "./templates/PageShell.jsx";
-import { Box } from "./templates/Box.jsx";
 import { TabBackground } from "./templates/TabBackground.jsx";
 import { SkyrimPage } from "./pages/SkyrimPage.jsx";
 import { IdeasPage } from "./pages/IdeasPage.jsx";
