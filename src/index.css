@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/*
+  If Tailwind preflight causes any visual regression on existing components,
+  add overrides here inside @layer base { ... }.
+  Example: @layer base { body { margin: 0; } }
+  In Phase 4A no component styles change — this is the bailout if needed.
+*/
+
+/* ── Harold Grayblood — CSS Custom Property Token System ──────────────────
+   Mapped from C object in src/constants.js.
+   Inline styles remain valid — tokens exist for Phase 5 migration.
+   ────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Core palette */
+  --color-bg:      #000000;             /* C.black */
+  --color-accent:  #d4a843;             /* C.gold */
+  --color-ember:   #ff6b1a;             /* C.ember */
+  --color-surface: rgba(0,0,0,0.75);    /* defaultTabTheme().boxBg */
+
+  /* Text */
+  --color-text:    #666666;             /* C.ash — source is "#666" (3-digit shorthand); normalised here. Do not string-compare against C.ash without normalising first. */
+  --color-cream:   #e8d5a3;             /* C.cream — primary readable text on dark backgrounds */
+  --color-frost:   #8ab4d4;             /* C.frost — subtitles, journal fullscreen, frost accent */
+
+  /* Borders / secondary gold */
+  --color-border:    #2a2a2a;           /* C.ashDim */
+  --color-gold-dim:  #8a6520;           /* C.goldDim — category labels, dim borders, secondary gold */
+
+  /* Parchment */
+  --color-ink:     #160c03;             /* C.ink — parchment body text */
+  --color-ink-mid: #2d1a08;             /* C.inkMid — parchment secondary text, signatures */
+
+  /* Semantic */
+  --color-danger:  #c0392b;             /* C.red — delete actions, destructive */
+  --color-success: #28a050;             /* C.green — uploaded status */
+
+  /* ── YouTube Calendar token group ──────────────────────────────────────
+     Exported from constants.js as standalone constants (not in C object).
+     Grouped here for Phase 5D calendar tokenisation.
+     ────────────────────────────────────────────────────────────────────── */
+  --cal-bg:      #e8dcc8;
+  --cal-border:  #c4aa80;
+  --cal-text:    #5a4a30;
+  --cal-subtext: #8a7a60;
+  --cal-empty:   #ddd3bc;
+  --cal-hdr-bg:  #8b1a1a;
+  --cal-hdr-txt: #f5e8d8;
+}
