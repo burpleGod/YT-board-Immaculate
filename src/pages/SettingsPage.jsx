@@ -7,7 +7,7 @@ import { PageHeader } from "../molecules/PageHeader.jsx";
 import { PageShell } from "../templates/PageShell.jsx";
 import { Box } from "../templates/Box.jsx";
 
-function SettingsPage({ themeSettings, updateTheme, ts, updateReady, appVersion, gallery }) {
+function SettingsPage({ themeSettings, updateTheme, ts, updateReady, appVersion, gallery, subscriberCount, setSubscriberCount }) {
   const [activeTab, setActiveTab] = useState("skyrim");
   const [importMsg, setImportMsg] = useState("");
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
@@ -220,6 +220,23 @@ function SettingsPage({ themeSettings, updateTheme, ts, updateReady, appVersion,
               <div style={{fontSize:10,letterSpacing:3,color:s.accentColor||C.gold,marginBottom:6}}>THE THRESHOLD</div>
               <div style={{fontSize:16,color:s.fontColor||C.cream}}>As the embers settle, so shall your colours.</div>
               <div style={{fontSize:12,color:C.ash,marginTop:4}}>The hearthstone holds.</div>
+            </div>
+          </Box>
+
+          {/* ── Creator Profile ── */}
+          <Box ts={ts}>
+            <FieldLabel accent={accent}>Creator Profile</FieldLabel>
+            <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem" }}>
+              <FieldLabel>Subscriber Count</FieldLabel>
+              <input
+                type="number"
+                min={0}
+                value={subscriberCount ?? 0}
+                onChange={e => setSubscriberCount(Math.max(0, parseInt(e.target.value) || 0))}
+                style={{ ...themedInput(ts), width:"100%" }}
+                placeholder="0"
+              />
+              <span style={{ fontSize:"0.75rem", color:C.ash }}>Used on the Skyrim overview page (Phase 5G)</span>
             </div>
           </Box>
 

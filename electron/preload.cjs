@@ -12,4 +12,7 @@ contextBridge.exposeInMainWorld("hgStorage", {
   onUpdateReady: (callback) => {
     ipcRenderer.on("hg:updateReady", () => callback());
   },
+  readProfiles:     () => ipcRenderer.invoke("hg:readProfiles"),
+  writeProfiles:    (data) => ipcRenderer.invoke("hg:writeProfiles", data),
+  setActiveProfile: (profileId) => ipcRenderer.invoke("hg:setActiveProfile", profileId),
 });

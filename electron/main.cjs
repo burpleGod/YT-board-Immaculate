@@ -9,14 +9,45 @@ protocol.registerSchemesAsPrivileged([
   { scheme: "hgdata", privileges: { standard: true, secure: true, supportFetchAPI: true } },
 ]);
 
-const APP_DIR = "harold-grayblood";
 const STATE_FILE = "state.json";
 const IMAGES_DIR = "images";
 
 let stateCache = null;
+let activeProfile = null;
+
+function getProfilesFilePath() {
+  return path.join(
+    process.env.PROGRAMDATA || "C:\\ProgramData",
+    "HaroldGrayblood",
+    "hg-profiles.json"
+  );
+}
+
+async function readProfilesFile() {
+  try {
+    const raw = await fsp.readFile(getProfilesFilePath(), "utf-8");
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+async function writeProfilesFile(data) {
+  const dir = path.dirname(getProfilesFilePath());
+  await fsp.mkdir(dir, { recursive: true });
+  await fsp.writeFile(getProfilesFilePath(), JSON.stringify(data, null, 2), "utf-8");
+}
+
+function slugify(name) {
+  return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+}
 
 function getDataRoot() {
-  return path.join(app.getPath("userData"), APP_DIR);
+  if (activeProfile?.dataDir) return activeProfile.dataDir;
+  // Fallback before profile is loaded (first-run / no profiles)
+  return path.join(
+    process.env.PROGRAMDATA || "C:\\ProgramData",
+    "HaroldGrayblood",
+    "harold-grayblood-default"
+  );
 }
 
 function getStatePath() {
@@ -119,6 +150,40 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  const profilesData = await readProfilesFile();
+
+  if (!profilesData || !profilesData.profiles?.length) {
+    const oldDataRoot = path.join(app.getPath("userData"), "harold-grayblood");
+    const oldStateFile = path.join(oldDataRoot, "state.json");
+    try {
+      await fsp.access(oldStateFile);
+      // Old AppData data found — migrate (copy-verify-delete, Option B)
+      const profileId = slugify("Harold Grayblood");
+      const newDataRoot = path.join(
+        process.env.PROGRAMDATA || "C:\\ProgramData",
+        "HaroldGrayblood",
+        `harold-grayblood-${profileId}`
+      );
+      await fsp.cp(oldDataRoot, newDataRoot, { recursive: true });
+      await fsp.access(path.join(newDataRoot, "state.json")); // verify copy succeeded
+      await fsp.rm(oldDataRoot, { recursive: true, force: true }); // delete original only after verify
+      const newProfile = {
+        id: profileId,
+        name: "Harold Grayblood",
+        dataDir: newDataRoot,
+        createdAt: new Date().toISOString(),
+        settings: { milestonesThresholds: [100, 500, 1000, 5000, 10000, 50000, 100000], portraitSrc: null },
+      };
+      await writeProfilesFile({ activeProfileId: profileId, profiles: [newProfile] });
+      activeProfile = newProfile;
+    } catch {
+      // No old data or copy failed — activeProfile stays null (first-run, Phase 4C will handle)
+    }
+  } else {
+    const activeId = profilesData.activeProfileId;
+    activeProfile = profilesData.profiles.find(p => p.id === activeId) ?? profilesData.profiles[0];
+  }
+
   await ensureDataDirs();
 
   stateCache = await readStateFromDisk();
@@ -176,6 +241,24 @@ app.whenReady().then(async () => {
 
   ipcMain.handle("hg:installUpdate", () => {
     autoUpdater.quitAndInstall();
+  });
+
+  ipcMain.handle("hg:readProfiles", async () => readProfilesFile());
+
+  ipcMain.handle("hg:writeProfiles", async (_evt, data) => {
+    await writeProfilesFile(data);
+    return true;
+  });
+
+  ipcMain.handle("hg:setActiveProfile", async (_evt, profileId) => {
+    const profilesData = await readProfilesFile();
+    const profile = profilesData?.profiles?.find(p => p.id === profileId);
+    if (!profile) return { error: "Profile not found" };
+    activeProfile = profile;
+    profilesData.activeProfileId = profileId;
+    await writeProfilesFile(profilesData);
+    stateCache = null;
+    return { ok: true };
   });
 
   await createWindow();

@@ -76,8 +76,9 @@ export default function HaroldGrayblood() {
   const [galleryCategories, setGalleryCategories] = useState(() => loadState("hg_gallery_categories", ["Screenshots","Characters","Landscapes","Concept Art"]));
   const [themeSettings, setThemeSettings] = useState(() => loadThemeSettings());
   const [mounted, setMounted]       = useState(false);
-  const [updateReady, setUpdateReady] = useState(false);
-  const [appVersion, setAppVersion]   = useState("");
+  const [updateReady, setUpdateReady]         = useState(false);
+  const [appVersion, setAppVersion]           = useState("");
+  const [subscriberCount, setSubscriberCount] = useState(0);
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 80);
@@ -88,6 +89,18 @@ export default function HaroldGrayblood() {
     if (window.hgStorage?.onUpdateReady) {
       window.hgStorage.onUpdateReady(() => setUpdateReady(true));
     }
+    if (window.hgStorage?.readState) {
+      window.hgStorage.readState().then(state => {
+        if (!state) return;
+        if (state.ideas !== undefined)             setIdeas(state.ideas);
+        if (state.journal !== undefined)           setJournal(state.journal);
+        if (state.episodes !== undefined)          setEpisodes(state.episodes);
+        if (state.categories !== undefined)        setCategories(state.categories);
+        if (state.gallery !== undefined)           setGallery(state.gallery);
+        if (state.galleryCategories !== undefined) setGalleryCategories(state.galleryCategories);
+        setSubscriberCount(state.subscriberCount ?? 0);
+      });
+    }
   }, []);
 
   useEffect(() => saveState("hg_ideas", ideas), [ideas]);
@@ -97,6 +110,16 @@ export default function HaroldGrayblood() {
   useEffect(() => saveState("hg_gallery", gallery), [gallery]);
   useEffect(() => saveState("hg_gallery_categories", galleryCategories), [galleryCategories]);
   useEffect(() => saveThemeSettings(themeSettings), [themeSettings]);
+
+  // Electron mode — write all app state to state.json on every change (Option A: full consolidation).
+  // localStorage writes above remain as browser-mode fallback when window.hgStorage is undefined.
+  useEffect(() => {
+    if (!window.hgStorage?.writeState) return;
+    window.hgStorage.writeState({
+      ideas, journal, episodes, categories,
+      gallery, galleryCategories, subscriberCount,
+    });
+  }, [ideas, journal, episodes, categories, gallery, galleryCategories, subscriberCount]);
 
   const switchTab = (t) => { setTab(t); setAnimKey(k=>k+1); };
   const ts = themeSettings[tab] || themeSettings["youtube"] || defaultTabTheme();
@@ -112,7 +135,7 @@ export default function HaroldGrayblood() {
         {tab==="journal"  && <JournalPage journal={journal} setJournal={setJournal} ts={ts} />}
         {tab==="youtube"  && <YouTubePage episodes={episodes} setEpisodes={setEpisodes} ts={ts} />}
         {tab==="gallery"  && <GalleryPage gallery={gallery} setGallery={setGallery} ts={ts} galleryCategories={galleryCategories} setGalleryCategories={setGalleryCategories} />}
-        {tab==="settings" && <SettingsPage themeSettings={themeSettings} updateTheme={updateTheme} ts={ts} updateReady={updateReady} appVersion={appVersion} gallery={gallery} />}
+        {tab==="settings" && <SettingsPage themeSettings={themeSettings} updateTheme={updateTheme} ts={ts} updateReady={updateReady} appVersion={appVersion} gallery={gallery} subscriberCount={subscriberCount} setSubscriberCount={setSubscriberCount} />}
       </div>
     </div>
   );
