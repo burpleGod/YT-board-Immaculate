@@ -328,6 +328,20 @@ Auto-update is configured for GitHub Releases under `burpleGod/YT-board-Immacula
 
 -----
 
+## Plan Mode (Default)
+
+**Plan Mode is the default for all Claude Code agent sessions on this project** (locked decision: 2026-03-02, PM: Sarah).
+
+Before executing any task:
+1. Read current source files
+2. Write a plan to the plan file
+3. Wait for explicit PM approval
+4. Execute only after approval
+
+Do not write code speculatively. Do not skip planning for "small" changes. When in doubt, stop and ask Sarah.
+
+-----
+
 ## Important Constraints & Gotchas
 
 1. **`HaroldGrayblood.jsx` must never be renamed.** The test imports it by name. The filename is permanent.
