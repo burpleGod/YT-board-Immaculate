@@ -1,0 +1,27 @@
+{
+  "name": "harold-grayblood",
+  "version": "1.0.0",
+  "description": "Cowork plugin for Harold Grayblood — scribe of the chronicle, keeper of the ledger.",
+  "commands": [
+    {
+      "name": "new-episode",
+      "description": "Open a new chapter in the chronicles of Harold Grayblood.",
+      "handler": "commands/new-episode.js"
+    },
+    {
+      "name": "draft-idea",
+      "description": "Mark a new thought in the ledger before it fades.",
+      "handler": "commands/draft-idea.js"
+    },
+    {
+      "name": "journal-entry",
+      "description": "Set quill to parchment. Record what the road demanded.",
+      "handler": "commands/journal-entry.js"
+    }
+  ],
+  "mcp": {
+    "stage": 2,
+    "status": "pending",
+    "note": "Stage 2 MCP server (IPC-connected, Path B) — not yet implemented. Phase 4B is complete; Stage 2 unblocked pending Phase 4C."
+  }
+}

@@ -198,18 +198,22 @@ All keys are prefixed `hg_`:
 The preload (`electron/preload.cjs`) exposes `window.hgStorage` to the renderer:
 
 ```js
-window.hgStorage.readState()              // → Promise<object>
-window.hgStorage.writeState(state)        // → Promise<void>
-window.hgStorage.saveImage(id, base64)    // → Promise<void>
-window.hgStorage.deleteImage(id)          // → Promise<void>
-window.hgStorage.readAllImages()          // → Promise<{ id: string, data: string }[]>
-window.hgStorage.getVersion()             // → Promise<string>
-window.hgStorage.installUpdate()          // → void
+window.hgStorage.readState()                   // → Promise<object>
+window.hgStorage.writeState(state)             // → Promise<void>
+window.hgStorage.saveImage(id, base64)         // → Promise<void>
+window.hgStorage.deleteImage(id)               // → Promise<void>
+window.hgStorage.readAllImages()               // → Promise<{ id: string, data: string }[]>
+window.hgStorage.getVersion()                  // → Promise<string>
+window.hgStorage.installUpdate()               // → void
+window.hgStorage.readProfiles()                // → Promise<{ activeProfileId, profiles[] } | null>
+window.hgStorage.writeProfiles(data)           // → Promise<boolean>
+window.hgStorage.setActiveProfile(profileId)   // → Promise<{ ok: true } | { error: string }>
+window.hgStorage.createProfile(data)           // → Promise<{ ok: true, profile: object }>
 ```
 
 **Custom protocol:** `hgdata://images/<id>` serves image files from the Electron userData directory.
 
-**File storage path:** `app.getPath("userData")/harold-grayblood/`
+**File storage path:** `%ProgramData%\HaroldGrayblood\{profile-id}\` (profile-aware since Phase 4B). Profiles listed in `%ProgramData%\HaroldGrayblood\hg-profiles.json`.
 
 - `state.json` — serialized application state
 - `images/` — binary image files
