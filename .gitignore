@@ -6,3 +6,6 @@ dist/
 .env.*
 coverage/
 *.log
+
+# Claude Code plan-mode working files
+docs/plans/
