@@ -81,6 +81,8 @@ export default function HaroldGrayblood() {
   const [appVersion, setAppVersion]           = useState("");
   const [subscriberCount, setSubscriberCount] = useState(0);
   const [showOnboarding, setShowOnboarding]   = useState(false);
+  const [profiles, setProfiles]               = useState([]);
+  const [activeProfileId, setActiveProfileId] = useState(null);
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 80);
@@ -103,10 +105,15 @@ export default function HaroldGrayblood() {
         setSubscriberCount(state.subscriberCount ?? 0);
       });
     }
-    // First-run detection — Rule 16: skippable in dev via VITE_SKIP_ONBOARDING=true
+    // First-run detection + profile state — Rule 16: skippable in dev via VITE_SKIP_ONBOARDING=true
     if (window.hgStorage?.readProfiles && !import.meta.env.VITE_SKIP_ONBOARDING) {
       window.hgStorage.readProfiles().then(data => {
-        if (!data) setShowOnboarding(true);
+        if (!data) {
+          setShowOnboarding(true);
+        } else {
+          setProfiles(data.profiles ?? []);
+          setActiveProfileId(data.activeProfileId ?? null);
+        }
       });
     }
   }, []);
@@ -133,11 +140,42 @@ export default function HaroldGrayblood() {
   const ts = themeSettings[tab] || themeSettings["youtube"] || defaultTabTheme();
   const updateTheme = (tabKey, key, val) => setThemeSettings(p => ({ ...p, [tabKey]: { ...p[tabKey], [key]: val } }));
 
+  const handleOnboardingComplete = async () => {
+    setShowOnboarding(false);
+    if (window.hgStorage?.readProfiles) {
+      const data = await window.hgStorage.readProfiles();
+      if (data) {
+        setProfiles(data.profiles ?? []);
+        setActiveProfileId(data.activeProfileId ?? null);
+      }
+    }
+  };
+
+  const switchProfile = async (profileId) => {
+    if (!window.hgStorage?.setActiveProfile) return;
+    const result = await window.hgStorage.setActiveProfile(profileId);
+    if (result?.error) return;
+    setActiveProfileId(profileId);
+    if (window.hgStorage?.readState) {
+      const state = await window.hgStorage.readState();
+      if (!state) return;
+      if (state.ideas !== undefined)             setIdeas(state.ideas);
+      if (state.journal !== undefined)           setJournal(state.journal);
+      if (state.episodes !== undefined)          setEpisodes(state.episodes);
+      if (state.categories !== undefined)        setCategories(state.categories);
+      if (state.gallery !== undefined)           setGallery(state.gallery);
+      if (state.galleryCategories !== undefined) setGalleryCategories(state.galleryCategories);
+      setSubscriberCount(state.subscriberCount ?? 0);
+    }
+  };
+
   return (
     <div style={{ background:C.black, minHeight:"100vh", color:C.cream, fontFamily:"'Cinzel',serif", display:"flex", flexDirection:"column", position:"relative" }}>
-      {showOnboarding && <OnboardingModal onComplete={() => setShowOnboarding(false)} />}
+      {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
       <TabBackground ts={ts} />
-      <Nav tab={tab} setTab={switchTab} ts={ts} />
+      <Nav tab={tab} setTab={switchTab} ts={ts}
+           profiles={profiles} activeProfileId={activeProfileId}
+           onSwitchProfile={switchProfile} />
       <div key={animKey} className="tab-enter" style={{ flex:1, display:"flex", flexDirection:"column", position:"relative", zIndex:1 }}>
         {tab==="skyrim"   && <SkyrimPage mounted={mounted} ts={ts} setTab={switchTab} />}
         {tab==="ideas"    && <IdeasPage ideas={ideas} setIdeas={setIdeas} categories={categories} setCategories={setCategories} ts={ts} />}
