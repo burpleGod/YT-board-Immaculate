@@ -1,4 +1,3 @@
-import React from "react";
 import { C, PARCHMENT, FONT_OPTIONS, SIZE_OPTIONS } from "../constants.js";
 import { defaultFormat, fontFamilyMap, kalamInput, toolInput } from "../utils.js";
 import { ActionBtn, ToggleBtn } from "../atoms/Button.jsx";
@@ -24,7 +23,7 @@ export function JournalEntryForm({ entry, setEntry, onSave, onCancel, label, ts,
           <div style={{width:1,height:20,background:C.ashDim}}/>
           {["left","center","right"].map(a=><ToggleBtn key={a} active={fmt.align===a} onClick={()=>setFmt("align",a)} label={a==="left"?"⬅":a==="center"?"☰":"➡"}/>)}
         </div>
-        <div style={{padding:"8px 12px",marginBottom:10,background:"rgba(196,160,90,0.08)",border:`1px solid rgba(138,101,32,0.2)`,fontFamily:fontFamilyMap(fmt.font),fontSize:Math.min(fmt.size,15),color:C.paper,fontWeight:fmt.bold?"700":"400",fontStyle:fmt.italic?"italic":"normal",textAlign:fmt.align}}>— a sample of the hand —</div>
+        <div style={{padding:"8px 12px",marginBottom:10,background:"rgba(196,160,90,0.08)",border:`1px solid rgba(138,101,32,0.2)`,fontFamily:fontFamilyMap(fmt.font),fontSize:Math.min(fmt.size,15),color:C.ink,fontWeight:fmt.bold?"700":"400",fontStyle:fmt.italic?"italic":"normal",textAlign:fmt.align}}>— a sample of the hand —</div>
         <textarea value={entry.body} onChange={e=>setEntry(n=>({...n,body:e.target.value}))} placeholder="Set quill to parchment. What did the road demand of you today?" style={{...kalamInput,width:"100%",minHeight:200,resize:"vertical",boxSizing:"border-box",marginBottom:14,lineHeight:2,fontFamily:fontFamilyMap(fmt.font),fontSize:fmt.size,fontWeight:fmt.bold?"700":"400",fontStyle:fmt.italic?"italic":"normal",textAlign:fmt.align}}/>
         <div style={{display:"flex",gap:8}}><ActionBtn onClick={onSave} accent={accent}>Save Entry</ActionBtn><ActionBtn onClick={onCancel}>Cancel</ActionBtn></div>
       </div>

@@ -55,8 +55,7 @@ YT-board-Immaculate/
 │   ├── templates/
 │   │   ├── PageShell.jsx
 │   │   ├── Box.jsx
-│   │   ├── TabBackground.jsx
-│   │   └── TwoColumnLayout.jsx
+│   │   └── TabBackground.jsx
 │   └── pages/
 │       ├── SkyrimPage.jsx
 │       ├── IdeasPage.jsx

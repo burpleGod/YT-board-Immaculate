@@ -1,4 +1,3 @@
-import React from "react";
 import { C, PARCHMENT } from "../constants.js";
 import { defaultFormat, fontFamilyMap } from "../utils.js";
 

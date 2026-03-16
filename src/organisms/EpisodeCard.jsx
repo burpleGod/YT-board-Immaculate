@@ -1,4 +1,3 @@
-import React from "react";
 import { C, STATUS_COLORS } from "../constants.js";
 import { iconBtnStyle } from "../utils.js";
 import { StatusBadge } from "../molecules/StatusBadge.jsx";

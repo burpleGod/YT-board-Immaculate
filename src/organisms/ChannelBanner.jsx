@@ -1,4 +1,3 @@
-import React from "react";
 import { C, YT_CHANNEL } from "../constants.js";
 import { linkBtnStyle } from "../utils.js";
 

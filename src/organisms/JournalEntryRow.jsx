@@ -1,4 +1,3 @@
-import React from "react";
 import { C } from "../constants.js";
 import { hexToRgb, iconBtnStyle } from "../utils.js";
 import { ParchmentView } from "./ParchmentView.jsx";
