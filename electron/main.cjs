@@ -261,6 +261,33 @@ app.whenReady().then(async () => {
     return { ok: true };
   });
 
+  ipcMain.handle("hg:createProfile", async (_evt, { name, dataDir: customDir }) => {
+    const id = slugify(name);
+    const resolvedDir = customDir?.trim() || path.join(
+      process.env.PROGRAMDATA || "C:\\ProgramData",
+      "HaroldGrayblood",
+      id
+    );
+    const newProfile = {
+      id,
+      name,
+      dataDir: resolvedDir,
+      createdAt: new Date().toISOString(),
+      settings: {
+        milestonesThresholds: [100, 500, 1000, 5000, 10000, 50000, 100000],
+        portraitSrc: null,
+      },
+    };
+    const existing = await readProfilesFile();
+    const profiles = existing?.profiles ?? [];
+    profiles.push(newProfile);
+    await writeProfilesFile({ activeProfileId: id, profiles });
+    activeProfile = newProfile;
+    stateCache = null;
+    await ensureDataDirs();
+    return { ok: true, profile: newProfile };
+  });
+
   await createWindow();
 
   // Auto-updater (only in production builds)

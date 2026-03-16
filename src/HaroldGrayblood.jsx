@@ -32,6 +32,7 @@ import { JournalPage } from "./pages/JournalPage.jsx";
 import { YouTubePage } from "./pages/YouTubePage.jsx";
 import { GalleryPage } from "./pages/GalleryPage.jsx";
 import { SettingsPage } from "./pages/SettingsPage.jsx";
+import { OnboardingModal } from "./organisms/OnboardingModal.jsx";
 
 // ── Global styles ──────────────────────────────────────────────────────────
 const styleEl = document.createElement("style");
@@ -79,6 +80,7 @@ export default function HaroldGrayblood() {
   const [updateReady, setUpdateReady]         = useState(false);
   const [appVersion, setAppVersion]           = useState("");
   const [subscriberCount, setSubscriberCount] = useState(0);
+  const [showOnboarding, setShowOnboarding]   = useState(false);
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 80);
@@ -99,6 +101,12 @@ export default function HaroldGrayblood() {
         if (state.gallery !== undefined)           setGallery(state.gallery);
         if (state.galleryCategories !== undefined) setGalleryCategories(state.galleryCategories);
         setSubscriberCount(state.subscriberCount ?? 0);
+      });
+    }
+    // First-run detection — Rule 16: skippable in dev via VITE_SKIP_ONBOARDING=true
+    if (window.hgStorage?.readProfiles && !import.meta.env.VITE_SKIP_ONBOARDING) {
+      window.hgStorage.readProfiles().then(data => {
+        if (!data) setShowOnboarding(true);
       });
     }
   }, []);
@@ -127,6 +135,7 @@ export default function HaroldGrayblood() {
 
   return (
     <div style={{ background:C.black, minHeight:"100vh", color:C.cream, fontFamily:"'Cinzel',serif", display:"flex", flexDirection:"column", position:"relative" }}>
+      {showOnboarding && <OnboardingModal onComplete={() => setShowOnboarding(false)} />}
       <TabBackground ts={ts} />
       <Nav tab={tab} setTab={switchTab} ts={ts} />
       <div key={animKey} className="tab-enter" style={{ flex:1, display:"flex", flexDirection:"column", position:"relative", zIndex:1 }}>

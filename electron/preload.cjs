@@ -15,4 +15,5 @@ contextBridge.exposeInMainWorld("hgStorage", {
   readProfiles:     () => ipcRenderer.invoke("hg:readProfiles"),
   writeProfiles:    (data) => ipcRenderer.invoke("hg:writeProfiles", data),
   setActiveProfile: (profileId) => ipcRenderer.invoke("hg:setActiveProfile", profileId),
+  createProfile:    (data) => ipcRenderer.invoke("hg:createProfile", data),
 });
