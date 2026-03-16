@@ -409,6 +409,13 @@ function SettingsPage({ themeSettings, updateTheme, ts, updateReady, appVersion,
 
         </div>
       </div>
+
+      {/* ── App version — system note, bottom of page ── */}
+      {appVersion && (
+        <div style={{marginTop:28,textAlign:"right",fontSize:10,color:C.ash,opacity:0.45,fontFamily:"monospace",letterSpacing:0.5}}>
+          v{appVersion}
+        </div>
+      )}
     </PageShell>
   );
 }

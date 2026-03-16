@@ -30,7 +30,9 @@ function Nav({ tab, setTab, ts, profiles = [], activeProfileId = null, onSwitchP
           onClick={() => setTab("skyrim")}
           style={{
             background: tab==="skyrim" ? `rgba(${hexToRgb(accent)},0.12)` : "rgba(0,0,0,0.5)",
-            border:`1px solid ${tab==="skyrim" ? accent : C.ashDim}`,
+            borderTop:`1px solid ${tab==="skyrim" ? accent : C.ashDim}`,
+            borderBottom:`1px solid ${tab==="skyrim" ? accent : C.ashDim}`,
+            borderLeft:`1px solid ${tab==="skyrim" ? accent : C.ashDim}`,
             borderRight:"none",
             color: tab==="skyrim" ? accent : C.ash,
             padding:"8px 24px", cursor:"pointer",
@@ -90,7 +92,9 @@ function Nav({ tab, setTab, ts, profiles = [], activeProfileId = null, onSwitchP
       {TABS.filter(t=>t!=="skyrim").map((t,i,arr) => (
         <button key={t} onClick={() => setTab(t)} style={{
           background: tab===t ? `rgba(${hexToRgb(accent)},0.12)` : "rgba(0,0,0,0.5)",
-          border:`1px solid ${tab===t ? accent : C.ashDim}`,
+          borderTop:`1px solid ${tab===t ? accent : C.ashDim}`,
+          borderBottom:`1px solid ${tab===t ? accent : C.ashDim}`,
+          borderLeft:`1px solid ${tab===t ? accent : C.ashDim}`,
           borderRight: i<arr.length-1 ? "none" : `1px solid ${tab===t ? accent : C.ashDim}`,
           color: tab===t ? accent : C.ash,
           padding:"8px 24px", cursor:"pointer",
