@@ -9,7 +9,7 @@ export const C = {
 export const RUNES = "ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ".split("");
 export const YT_CHANNEL = "https://www.youtube.com/@AntlamTE";
 export const TABS = ["youtube","skyrim","gallery","settings"];
-export const TAB_LABELS = { skyrim:"⚔ Skyrim", youtube:"▶ YouTube", gallery:"🖼 Gallery", settings:"⚙ The Forge" };
+export const TAB_LABELS = { skyrim:"⚔ Skyrim", youtube:"▶ YouTube", gallery:"🖼 Gallery", settings:"⚙ The Forge", ideas:"📜 Ideas", journal:"✒ Journal" };
 export const SKYRIM_SUBTABS = [
   { id:"ideas",   icon:"📜", label:"Ideas Board" },
   { id:"journal", icon:"✒", label:"Journal"      },
